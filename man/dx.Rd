@@ -35,7 +35,7 @@ dT(y,maxhar=NULL)
     \item{lat}{Latitude}
     \item{Z}{Field values of which the gradients are sought}
     \item{r}{mean radius of Earth}
-    \item{maxhar}{Number of harmonics to include}
+    \item{maxhar}{Number of harmonics to include. If NULL, \code{maxhar} is set to the length of the series.}
     \item{mask.bad}{}
     \item{y}{a time series (vector).}
   }

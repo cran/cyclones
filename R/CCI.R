@@ -280,7 +280,8 @@ if (sum(slp$tim > max(tim))>0) {
                   max.dpsl=max.dpsl[1:ii,],max.speed=max.speed[1:ii,],
                   radius=radius[1:ii,],rad.max.dpsl=rad,dx=dx,dy=dy,
                   version="cyclones v1.1-2 (after Nov. 29, 2004)")
-  save(file=fname,results)
+  if (mod(ii,30)==0) save(file="CCI_backup.Rdata",results)
+  if (mod(ii,10)==0) save(file=fname,results)
   print(paste("ii=",ii,"it=",it,"yy=",slp$yy[it],"mm=",slp$mm[it],
               "dd=",slp$dd[it],"N.lows=",sum(i.sim),"PSL min=",round(psl[ii,1]),
               "dPSL max",round(max.dpsl[ii,1]*1e6,2),"max.speed",
@@ -298,7 +299,7 @@ if (sum(slp$tim > max(tim))>0) {
   if ((lplot) & (plot.now)) {
     postscript(file = paste("cyclones_y_",vname,ii,".eps",sep=""),onefile=FALSE,horizontal=FALSE)
     plot(latx,slpmap[ilon1,]+mslpmap[ilon1,],ylim=c(970,1050),type="n",
-         main=paste("SLP profile at ",lat[ii,1],"E",sep=""),
+         main=paste("SLP profile at ",lon[ii,1],"E",sep=""),
          xlab="Latitude (deg N)",ylab="SLP (hPa)",
          sub=paste(slp$yy[it],"-",slp$mm[it],"-",slp$dd[it]," #",ii,sep=""))
     grid()
@@ -344,6 +345,7 @@ if (sum(slp$tim > max(tim))>0) {
 } # end of if (sum(slp$tim > max(tim))>0)
 } # end of is-loop
 file.remove(".CCI.run")
+file.remove("CCI_backup.Rdata")
 }
 
 stopCCI <- function() {

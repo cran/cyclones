@@ -20,19 +20,20 @@ if (!is.null(fname)) {
 subtit<-paste("region: ",x.rng[1],"E...",x.rng[2],"E / ",y.rng[1],"N...",y.rng[2],"N.",
               " Threshold= ",psl0,sep="")
 print(subtit)
-dsh <- instring("-",subtit); Es <- instring("E",subtit); Ns <- instring("N",subtit)
-if (dsh[1] !=0) {
-  for (i in 1:length(dsh)) {
+dsh0 <- instring("-",subtit); Es <- instring("E",subtit); Ns <- instring("N",subtit); dsh <- dsh0
+if (dsh0[1] !=0) {
+  for (i in 1:length(dsh0)) {
     ln <- nchar(subtit)
-    pE <- min(Es[Es >= dsh[i]]); pN <- min(Ns[Ns >= dsh[i]])
+    pE <- min(Es[Es >= dsh[1]]); pN <- min(Ns[Ns >= dsh[1]])
     #print(c(ln,pE,pN))
-    if (dsh[i] <= max(Es)) subtit <- paste(substr(subtit,1,dsh[i]-1),
-                                           substr(subtit,dsh[i]+1,pE-1),"W",
+    if (dsh[1] <= max(Es)) subtit <- paste(substr(subtit,1,dsh[1]-1),
+                                           substr(subtit,dsh[1]+1,pE-1),"W",
                                            substr(subtit,pE+1,ln),sep="") else
-    if (dsh[i] > max(Es))  subtit <- paste(substr(subtit,1,dsh[i]-1),
-                                           substr(subtit,dsh[i]+1,pN-1),"S",
+    if (dsh[1] > max(Es))  subtit <- paste(substr(subtit,1,dsh[1]-1),
+                                           substr(subtit,dsh[1]+1,pN-1),"S",
                                            substr(subtit,pE+1,ln),sep="") 
     print(subtit)
+    dsh <- instring("-",subtit); Es <- instring("E",subtit); Ns <- instring("N",subtit)
   }
 }
 
@@ -126,11 +127,11 @@ my.col <- rgb(c(1,0.7),c(1,0.7),c(1,0.7))
 print(clons); print(clats)
 print(paste("Grid box size= ",2*dx,"x",2*dy))
 
-x11()
+postscript(file = "cyclstat.eps",onefile=FALSE,horizontal=FALSE)
 image(lons,lats,mask,main="Cyclone count per year",lwd=2,
       xlab="Longitude (deg E)",ylab="Latitude (deg N)",
       sub=paste("Period:",min(results$yy,na.rm=TRUE),"-",
-      max(results$yy,na.rm=TRUE)),col=my.col,levels=c(0,1))
+      max(results$yy,na.rm=TRUE)," psl0=",psl0),col=my.col,levels=c(0,1))
 polygon(c(x.rng[1],rep(x.rng[2],2),rep(x.rng[1],2)),
         c(rep(y.rng[1],2),rep(y.rng[2],2),y.rng[1]),edge="grey70",lty=2)
 contour(clons,clats,cfrq,lwd=2,add=TRUE)
@@ -141,11 +142,10 @@ if (cmp) {
 grid()
 addland()
 
-dev.copy2eps(file="cyclstat.eps")
-dev2bitmap(file="cyclstat.jpg",
-           height=10,width=10,res=250,type="jpeg")
+if (dev.cur() > 1) dev.off()
 
-x11()
+
+postscript(file = "cyclstat.scratch.eps",onefile=FALSE,horizontal=FALSE)
 years <- as.numeric(rownames(table(results$yy)))
 if (cmp) years <- as.numeric(rownames(table(c(results$yy,result2$yy))))
 nyrs <- length(years)
@@ -205,8 +205,11 @@ ifix <- is.na(ncyymm2) & c(rep(FALSE,ift),rep(TRUE,nt-ift)) &
                          c(rep(TRUE,itf),rep(FALSE,nt-itf))
 ncyymm2[ifix] <- 0
 }
+dev.off()
 
 # Final figure
+
+postscript(file = "cyclstat2.eps",onefile=FALSE,horizontal=FALSE)
 
 plot(range(yymm),range(ma.filt(ncyymm,12),na.rm=TRUE)*c(0,1.75),type="n",
          xlab="time",ylab="count/month",sub=subtit,
@@ -217,17 +220,19 @@ lines(yymm,ma.filt(ncyymm,12))
 grid()
 
 ncmm <- ncmm/nyrs
-abline(lm(ncyymm ~ yymm),lty=2,col="grey20",lwd=3)
+trend1 <- lm(ncyymm ~ yymm)
+abline(trend1,lty=2,col="grey20",lwd=3)
+p.trend <- summary(trend1)
 if (cmp) {
   ncmm2 <- ncmm2/nyrs
-  abline(lm(ncyymm2 ~ yymm),lty=2,col="grey60",lwd=3)
+  trend2 <- lm(ncyymm2 ~ yymm)
+  abline(trend2,lty=2,col="grey60",lwd=3)
 }
 print(summary(lm(ncyymm ~ yymm)))
 if (cmp) print(summary(lm(ncyymm2 ~ yymm)))
-
-dev.copy2eps(file="cyclstat2.eps")
-dev2bitmap(file="cyclstat2.jpg",
-           height=10,width=10,res=250,type="jpeg")
+print("test")
+print(dev.cur())
+dev.off()
 
 
 for (iy in 1:nyrs) {
@@ -266,8 +271,7 @@ for (iy in 1:nyrs) {
 scmm2 <- sqrt(scmm2/(nyrs-1) )
 }
 
-
-x11()
+postscript(file = "cyclstat3.eps",onefile=FALSE,horizontal=FALSE)
 par(col.axis="white")
 plot(c(1,24),range(ncmm+scmm,na.rm=TRUE)*c(0,1.75),main="seasonal cyclone variability",
      type="n",xlab="Month",ylab="Mean storm count/month",sub=subtit)
@@ -285,14 +289,12 @@ axis(1,at=1:24,labels=rep(c("Jan","Feb","Mar","Apr","May","Jun",
                             "Jul","Aug","Sep","Oct","Nov","Dec"),2))
 axis(2)
 grid()
-dev.copy2eps(file="cyclstat3.eps")
-dev2bitmap(file="cyclstat3.jpg",
-           height=10,width=10,res=250,type="jpeg")
+dev.off()
 
 mm <- rep(1:12,nyrs); yy <- sort(rep(years,12))
 if (!is.null(mon)) imon <- is.element(mm,mon) else imon <- rep(TRUE,length(mm))
 
-x11()
+postscript(file = "cyclstat4.eps",onefile=FALSE,horizontal=FALSE)
 x <- seq(0,max(ncyymm[imon],na.rm=TRUE)+10,by=1)
 mu <- mean(ncyymm[imon],na.rm=TRUE)
 #poisson <- exp(-mu+x*log(mu)-cumsum(x))
@@ -307,13 +309,13 @@ plot(h1$mids,h1$density,lwd=3,main="cyclone semiday count distribution",
 if (cmp) lines(h2$mids,h2$density,lwd=3,col="grey60")
 grid()
 lines(x,poisson,lwd=1,lty=2,col="grey30")
-dev.copy2eps(file="cyclstat4.eps")
-dev2bitmap(file="cyclstat4.jpg",
-           height=10,width=10,res=250,type="jpeg")
-stat <- summary(lm(ncyymm ~ yymm))
-p.value <- round(100*(1-pf(stat$fstatistic[1],
-                           stat$fstatistic[2],
-                           stat$fstatistic[3])),1)
+dev.off()
+
+
+stat <- summary(trend1)
+p.value1 <- round(100*(1-pf(stat$fstatistic[1],
+                            stat$fstatistic[2],
+                            stat$fstatistic[3])),1)
 
 cyclones <- station.obj(x=ncyymm,yy=yy,mm=mm,
                         obs.name=paste("Cyclone (psl0= ",psl0,") count",sep=""),
@@ -321,9 +323,16 @@ cyclones <- station.obj(x=ncyymm,yy=yy,mm=mm,
                         unit="cyclone-days",station=NA,lat=mean(y.rng),lon=mean(x.rng),alt=NA,
                         wmo.no=NA,
                         ref=paste("Linear trend:",as.numeric(stat$coefficients[2])),
-                                   "; p-value=",p.value,"%")
+                                   "; p-value=",p.value1,"%")
+if (stat$coefficients[2] > 0) cyclones$p.value.1 <- p.value1 else cyclones$p.value.1 <- -p.value1
 if (cmp) {
   cyclones$ncyymm2 <- ncyymm2
+  stat <- summary(trend2)
+  p.value2 <- round(100*(1-pf(stat$fstatistic[1],
+                              stat$fstatistic[2],
+                              stat$fstatistic[3])),1)
+
+  if (stat$coefficients[2] > 0) cyclones$p.value.2 <- p.value2 else cyclones$p.value.2 <- -p.value2
 }
 
 
