@@ -1,0 +1,332 @@
+
+cyclstat <- function(fname=NULL,psl0=1000,topo="data/etopo60.Rdata",cyclone=TRUE,
+                     x.rng=c(5,35),y.rng=c(55,72),cmp=FALSE,mon=c(12,1,2)) {
+library(clim.pact)
+env <- environment()
+  cmon <- c("Jan","Feb","Mar","Apr","May","Jun",
+            "Jul","Aug","Sep","Oct","Nov","Dec")
+
+if (is.null(fname)) cmp <- FALSE
+if (!is.null(fname)) {
+  print("Using the given object")
+  if (class(fname)=="list") results <- fname
+  else if (is.character(fname)) load(fname) else stop('Cannot determine the object')
+  print(range(results$yy))
+} else {
+  data(storms,envir = env)
+  results <- storms
+}
+
+subtit<-paste("region: ",x.rng[1],"E...",x.rng[2],"E / ",y.rng[1],"N...",y.rng[2],"N.",
+              " Threshold= ",psl0,sep="")
+print(subtit)
+dsh <- instring("-",subtit); Es <- instring("E",subtit); Ns <- instring("N",subtit)
+if (dsh[1] !=0) {
+  for (i in 1:length(dsh)) {
+    ln <- nchar(subtit)
+    pE <- min(Es[Es >= dsh[i]]); pN <- min(Ns[Ns >= dsh[i]])
+    #print(c(ln,pE,pN))
+    if (dsh[i] <= max(Es)) subtit <- paste(substr(subtit,1,dsh[i]-1),
+                                           substr(subtit,dsh[i]+1,pE-1),"W",
+                                           substr(subtit,pE+1,ln),sep="") else
+    if (dsh[i] > max(Es))  subtit <- paste(substr(subtit,1,dsh[i]-1),
+                                           substr(subtit,dsh[i]+1,pN-1),"S",
+                                           substr(subtit,pE+1,ln),sep="") 
+    print(subtit)
+  }
+}
+
+if (cmp) {
+  #print("Compare two results")
+  result2 <- results
+  data(storms,envir = env); results <- storms
+  nobs2 <- length(result2$yy)
+  t.scal2 <- 365.25/nobs2
+  print(range(results$yy))
+  print(range(result2$yy))
+# Weed out any double entries:
+  date <- result2$yy*10000+result2$mm*100+result2$dd
+  chk.ovrlp <- table(date)
+  n.obs <- as.numeric(chk.ovrlp)
+  t.ovrlp <- as.numeric(rownames(chk.ovrlp))
+  date.ovlp <- date[is.element(date,t.ovrlp[n.obs > median(n.obs)])]
+  t.scl2 <- 1/median(n.obs)
+  print(paste("Double entries: where more than",median(n.obs),"observations"))
+  #print(date.ovlp)
+  for (i in 1:length(date.ovlp)) {
+    ii <- is.element(result2$yy*10000+result2$mm*100+result2$dd,date.ovlp)
+    result2$psl[ii][(median(n.obs)+1):sum(ii)] <- NA
+  }
+}
+
+# Weed out any double entries:
+date <- results$yy*10000+results$mm*100+results$dd
+chk.ovrlp <- table(date)
+n.obs <- as.numeric(chk.ovrlp)
+t.ovrlp <- as.numeric(rownames(chk.ovrlp))
+date.ovlp <- date[is.element(date,t.ovrlp[n.obs > median(n.obs)])]
+t.scl <- 1/median(n.obs)
+print(paste("Double entries: where more than",median(n.obs),"observations"))
+#print(date.ovlp)
+for (i in 1:length(date.ovlp)) {
+  ii <- is.element(results$yy*10000+results$mm*100+results$dd,date.ovlp)
+  results$psl[ii][(median(n.obs)+1):sum(ii)] <- NA
+}
+
+nobs <- length(results$yy)
+t.scal <- 365.25/nobs
+nlon <- min(results$lon,na.rm=TRUE); xlon <- max(results$lon,na.rm=TRUE);
+nlat <- min(results$lat,na.rm=TRUE); xlat <- max(results$lat,na.rm=TRUE);
+#results$psl[,3:10] <- NA; results$lon[,3:10] <- NA; results$lat[,3:10]
+
+load(topo)
+lons <- top$ETOPO60X
+lons[lons>180] <- lons[lons>180]-360
+srtx <- order(lons)
+lons <- lons[srtx]
+mask <- t(top$ROSE[,srtx])
+lats <- top$ETOPO60Y
+
+nx <- length(lons)
+ny <- length(lats)
+mask[mask<=0] <- 0
+mask[mask>0] <- 1
+mask[lons < x.rng[1]] <- 0
+mask[lons > x.rng[2]] <- 0
+mask[,lats< y.rng[1]] <- 0
+mask[,lats> y.rng[2]] <- 0
+
+ix <- (lons >= nlon) & (lons <= xlon)
+iy <- (lats >= nlat) & (lats <= xlat)
+
+lons <- lons[ix]
+lats <- lats[iy]
+mask <- mask[ix,iy]
+
+nx <- 15; ny=15
+clons <- seq(nlon,xlon,length=nx)
+clats <- seq(nlat,xlat,length=ny)
+dx <- 0.5*(clons[2]-clons[1])
+dy <- 0.5*(clats[2]-clats[1])
+
+print("Mapping cyclone counts")
+cfrq <- matrix(rep(0,nx*ny),nx,ny)
+if (cmp) cfrq2 <- matrix(rep(0,nx*ny),nx,ny)
+for (j in 1:ny) {
+  for (i in 1:nx) {
+    cfrq[i,j] <- t.scal*sum( (results$lon >= clons[i]-dx) & (results$lon < clons[i]+dx) &
+                             (results$lat >= clats[j]-dy) & (results$lat < clats[j]+dy) &
+                             (results$psl < psl0),na.rm=TRUE )
+    if (cmp) cfrq2[i,j] <- t.scal2*sum( (result2$lon >= clons[i]-dx) & (result2$lon < clons[i]+dx) &
+                                        (result2$lat >= clats[j]-dy) & (result2$lat < clats[j]+dy) &
+                                        (result2$psl < psl0),na.rm=TRUE )
+  }
+}
+my.col <- rgb(c(1,0.7),c(1,0.7),c(1,0.7))
+print(clons); print(clats)
+print(paste("Grid box size= ",2*dx,"x",2*dy))
+
+x11()
+image(lons,lats,mask,main="Cyclone count per year",lwd=2,
+      xlab="Longitude (deg E)",ylab="Latitude (deg N)",
+      sub=paste("Period:",min(results$yy,na.rm=TRUE),"-",
+      max(results$yy,na.rm=TRUE)),col=my.col,levels=c(0,1))
+polygon(c(x.rng[1],rep(x.rng[2],2),rep(x.rng[1],2)),
+        c(rep(y.rng[1],2),rep(y.rng[2],2),y.rng[1]),edge="grey70",lty=2)
+contour(clons,clats,cfrq,lwd=2,add=TRUE)
+if (cmp) {
+  #print("overlay contours from second data set...") 
+  contour(clons,clats,cfrq2,lwd=1,col="grey20", add=TRUE)
+}
+grid()
+addland()
+
+dev.copy2eps(file="cyclstat.eps")
+dev2bitmap(file="cyclstat.jpg",
+           height=10,width=10,res=250,type="jpeg")
+
+x11()
+years <- as.numeric(rownames(table(results$yy)))
+if (cmp) years <- as.numeric(rownames(table(c(results$yy,result2$yy))))
+nyrs <- length(years)
+ncyymm <- rep(NA,12*nyrs)
+ncmm <- rep(0,12); scmm <- rep(0,12)
+yymm <- sort(rep(years,12)) + (rep(1:12,nyrs)-0.5)/12
+ncyymm2 <- ncyymm; ncmm2 <- ncmm; scmm2 <- scmm
+for (iy in 1:nyrs) {
+  for (im in 1:12) {
+    immyy <- (results$mm==im) & (results$yy==years[iy]) 
+    lon <- results$lon[immyy]
+    lat <- results$lat[immyy]
+    psl <- results$psl[immyy]
+    if (cyclone) icyclone <- t.scl*sum((lon >= x.rng[1]) & (lon <= x.rng[2]) &
+                                     (lat >= y.rng[1]) & (lat <= y.rng[2]) &
+                                     (psl < psl0),na.rm=TRUE ) else
+                 icyclone <- t.scl*sum((lon >= x.rng[1]) & (lon <= x.rng[2]) &
+                                     (lat >= y.rng[1]) & (lat <= y.rng[2]) &
+                                     (psl > psl0),na.rm=TRUE )
+    imiy <- (iy-1)*12+im
+    if (sum(immyy)>0) ncyymm[imiy] <- icyclone
+    ncmm[im]<-ncmm[im]+icyclone
+    if (cmp) {
+      immyy <- (result2$mm==im) & (result2$yy==years[iy]) 
+      lon <- result2$lon[immyy]
+      lat <- result2$lat[immyy]
+      psl <- result2$psl[immyy]
+      if (cyclone) icyclone <- t.scl2*sum((lon >= x.rng[1]) & (lon <= x.rng[2]) &
+                                       (lat >= y.rng[1]) & (lat <= y.rng[2]) &
+                                       (psl < psl0),na.rm=TRUE ) else
+                   icyclone <- t.scl2*sum((lon >= x.rng[1]) & (lon <= x.rng[2]) &
+                                       (lat >= y.rng[1]) & (lat <= y.rng[2]) &
+                                       (psl > psl0),na.rm=TRUE )
+      imiy <- (iy-1)*12+im
+      if (sum(immyy)>0) ncyymm2[imiy] <- icyclone
+      ncmm2[im]<-ncmm2[im]+icyclone
+    }
+    if (sum(is.finite(ncyymm))>0) {
+      plot(yymm+0.03,as.vector(ncyymm),type="s",xlab="time",
+           ylab="count/month",lwd=2,
+           main=paste("Cyclone count",
+           results$yy[1],"-",max(results$yy,na.rm=TRUE)))
+      lines(yymm,as.vector(ncyymm),type="s",lwd=2)
+      lines(yymm,as.vector(ncyymm2),type="s",lwd=1,col="grey40")
+     }
+  }
+}
+
+nt <- length(ncyymm); ind <- 1:nt
+ift <- ind[!is.na(ncyymm)][1]-1; itf <- reverse(ind[!is.na(ncyymm)])[1]
+ifix <- is.na(ncyymm) & c(rep(FALSE,ift),rep(TRUE,nt-ift)) & 
+                        c(rep(TRUE,itf),rep(FALSE,nt-itf))
+ncyymm[ifix] <- 0
+if (cmp) {
+ift <- ind[!is.na(ncyymm2)][1]-1; itf <- reverse(ind[!is.na(ncyymm2)])[1]
+ifix <- is.na(ncyymm2) & c(rep(FALSE,ift),rep(TRUE,nt-ift)) & 
+                         c(rep(TRUE,itf),rep(FALSE,nt-itf))
+ncyymm2[ifix] <- 0
+}
+
+# Final figure
+
+plot(range(yymm),range(ma.filt(ncyymm,12),na.rm=TRUE)*c(0,1.75),type="n",
+         xlab="time",ylab="count/month",sub=subtit,
+         main=paste("Cyclone count",min(years),"-",max(years)))
+lines(yymm,ma.filt(ncyymm,12),lwd=4)
+if (cmp) lines(yymm,ma.filt(ncyymm2,12),type="l",lwd=3,col="grey")
+lines(yymm,ma.filt(ncyymm,12))
+grid()
+
+ncmm <- ncmm/nyrs
+abline(lm(ncyymm ~ yymm),lty=2,col="grey20",lwd=3)
+if (cmp) {
+  ncmm2 <- ncmm2/nyrs
+  abline(lm(ncyymm2 ~ yymm),lty=2,col="grey60",lwd=3)
+}
+print(summary(lm(ncyymm ~ yymm)))
+if (cmp) print(summary(lm(ncyymm2 ~ yymm)))
+
+dev.copy2eps(file="cyclstat2.eps")
+dev2bitmap(file="cyclstat2.jpg",
+           height=10,width=10,res=250,type="jpeg")
+
+
+for (iy in 1:nyrs) {
+  for (im in 1:12) {
+    immyy <- (results$mm==im) & (results$yy==years[iy]) 
+    lon <- results$lon[immyy]
+    lat <- results$lat[immyy]
+    psl <- results$psl[immyy]
+    if (cyclone) icyclone <- t.scal*sum((lon >= x.rng[1]) & (lon <= x.rng[2]) &
+                                        (lat >= y.rng[1]) & (lat <= y.rng[2]) &
+                                        (psl < psl0),na.rm=TRUE ) else
+                  icyclone <- t.scal*sum((lon >= x.rng[1]) & (lon <= x.rng[2]) &
+                                         (lat >= y.rng[1]) & (lat <= y.rng[2]) &
+                                         (psl > psl0),na.rm=TRUE )
+    scmm[im]<-scmm[im]+(icyclone - ncmm[im])^2
+  }
+}
+scmm <- sqrt(scmm/(nyrs-1) )
+
+if (cmp) {
+for (iy in 1:nyrs) {
+  for (im in 1:12) {
+    immyy <- (result2$mm==im) & (result2$yy==years[iy]) 
+    lon <- result2$lon[immyy]
+    lat <- result2$lat[immyy]
+    psl <- result2$psl[immyy]
+    if (cyclone) icyclone <- t.scal2*sum((lon >= x.rng[1]) & (lon <= x.rng[2]) &
+                                         (lat >= y.rng[1]) & (lat <= y.rng[2]) &
+                                         (psl < psl0),na.rm=TRUE ) else
+                  icyclone <- t.scal2*sum((lon >= x.rng[1]) & (lon <= x.rng[2]) &
+                         (lat >= y.rng[1]) & (lat <= y.rng[2]) &
+                         (psl > psl0),na.rm=TRUE )
+    scmm2[im]<-scmm2[im]+(icyclone - ncmm2[im])^2
+  }
+}
+scmm2 <- sqrt(scmm2/(nyrs-1) )
+}
+
+
+x11()
+par(col.axis="white")
+plot(c(1,24),range(ncmm+scmm,na.rm=TRUE)*c(0,1.75),main="seasonal cyclone variability",
+     type="n",xlab="Month",ylab="Mean storm count/month",sub=subtit)
+sdv1 <- c(rep(ncmm+scmm,2),reverse(rep(ncmm-scmm,2))); sdv1[sdv1 < 0] <- 0
+polygon(c(1:24,seq(24,1,by=-1)),sdv1,col="grey70")
+if (cmp) {
+  sdv2 <- c(rep(ncmm2+scmm2,2),reverse(rep(ncmm2-scmm2,2))); sdv2[sdv2 < 0] <- 0
+  polygon(c(1:24,seq(24,1,by=-1)),sdv2,col="grey90",density=16,lwd=2)
+}
+lines(1:24,rep(ncmm,2),lwd=6)
+if (cmp) lines(1:24,rep(ncmm2,2),lwd=4,col="grey50")
+
+par(col.axis="black",las=2)
+axis(1,at=1:24,labels=rep(c("Jan","Feb","Mar","Apr","May","Jun",
+                            "Jul","Aug","Sep","Oct","Nov","Dec"),2))
+axis(2)
+grid()
+dev.copy2eps(file="cyclstat3.eps")
+dev2bitmap(file="cyclstat3.jpg",
+           height=10,width=10,res=250,type="jpeg")
+
+mm <- rep(1:12,nyrs); yy <- sort(rep(years,12))
+if (!is.null(mon)) imon <- is.element(mm,mon) else imon <- rep(TRUE,length(mm))
+
+x11()
+x <- seq(0,max(ncyymm[imon],na.rm=TRUE)+10,by=1)
+mu <- mean(ncyymm[imon],na.rm=TRUE)
+#poisson <- exp(-mu+x*log(mu)-cumsum(x))
+poisson <- dpois(x,lambda=mu)
+if (cmp) brks <- seq(0,max(c(ncyymm[imon],ncyymm2[imon]),na.rm=TRUE)+10,by=5) else
+         brks <- seq(0,max(ncyymm[imon],na.rm=TRUE)+10,by=5)
+subtit <- paste(subtit," (",cmon[mon[1]],"-",cmon[mon[length(mon)]],")",sep="")
+if (cmp) h2 <- hist(ncyymm2[imon],breaks=brks,freq=FALSE)
+h1 <- hist(ncyymm[imon],breaks=brks,freq=FALSE)
+plot(h1$mids,h1$density,lwd=3,main="cyclone semiday count distribution",
+     ylim=c(0,max(poisson)),xlab="Mean storm count/month",type="l",sub=subtit)
+if (cmp) lines(h2$mids,h2$density,lwd=3,col="grey60")
+grid()
+lines(x,poisson,lwd=1,lty=2,col="grey30")
+dev.copy2eps(file="cyclstat4.eps")
+dev2bitmap(file="cyclstat4.jpg",
+           height=10,width=10,res=250,type="jpeg")
+stat <- summary(lm(ncyymm ~ yymm))
+p.value <- round(100*(1-pf(stat$fstatistic[1],
+                           stat$fstatistic[2],
+                           stat$fstatistic[3])),1)
+
+cyclones <- station.obj(x=ncyymm,yy=yy,mm=mm,
+                        obs.name=paste("Cyclone (psl0= ",psl0,") count",sep=""),
+                        location=paste(x.rng[1],"E - ",x.rng[2],"E / ",y.rng[1],"N - ",y.rng[2],sep=""),
+                        unit="cyclone-days",station=NA,lat=mean(y.rng),lon=mean(x.rng),alt=NA,
+                        wmo.no=NA,
+                        ref=paste("Linear trend:",as.numeric(stat$coefficients[2])),
+                                   "; p-value=",p.value,"%")
+if (cmp) {
+  cyclones$ncyymm2 <- ncyymm2
+}
+
+
+save(file="cyclstat.Rdata",cyclones)
+invisible(cyclones)
+}
