@@ -8,7 +8,7 @@
 #
 # also see reg.cal.R
 
-dX <- function(lon,lat,Z,r=6.378e06,maxhar=NULL,mask.bad=TRUE) {
+dX <- function(lon,lat,Z,r=6.378e06,maxhar=NULL,mask.bad=TRUE,plot=FALSE) {
   ny <- length(lat)
   nx <- length(lon)
   if (is.null(maxhar)) maxhar <- nx
@@ -40,6 +40,7 @@ dX <- function(lon,lat,Z,r=6.378e06,maxhar=NULL,mask.bad=TRUE) {
       dZ[,j] <- dZ[,j] +iw*W*( -a[j,iw]*sin(wt) + b[j,iw]*cos(wt) )
     }
    }
+    if (plot) {plot(Z[,j],main=paste("dX:",j,"of",ny),xlab="y",ylab="z"); lines(Z.fit[,j],lwd=2,col="grey")}
 #    print(c(r,cos(phi[j]),j,r*cos(phi[j])))
     dZ[,j] <- dZ[,j]/(r*cos(phi[j]))
   }

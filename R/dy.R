@@ -7,7 +7,7 @@
 # R.E. Benestad, 26.06.2003.
 #
 # also see reg.cal.R
-dY <- function(lon,lat,Z,r=6.378e06,maxhar=NULL,mask.bad=TRUE) {
+dY <- function(lon,lat,Z,r=6.378e06,maxhar=NULL,mask.bad=TRUE,plot=FALSE) {
   ny <- length(lat)
   nx <- length(lon)
   if (is.null(maxhar)) maxhar <- ny
@@ -41,6 +41,7 @@ dY <- function(lon,lat,Z,r=6.378e06,maxhar=NULL,mask.bad=TRUE) {
      }
     }
     dZ[i,] <- dZ[i,]/r
+    if (plot) {plot(Z[i,],main=(paste("dY:",i,"of",nx)),xlab="x",ylab="z"); lines(Z.fit[i,],lwd=2,col="grey")}
   }
   if (mask.bad) {
     dZ[mask] <- NA

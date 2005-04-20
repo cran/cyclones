@@ -45,7 +45,8 @@ file can be obtained from \url{http://ferret.pmel.noaa.gov/NVODS/servlets/datase
 coefFit(y,x=NULL,n=length(y),method="lm")
 coefDeriv(y)
 coefInt(y,c1=0)
-geoGrad(win.len=25,fname="data/etopo5_scandinavia.Rdata")
+geoGrad(maxhar = 35, fname = "data/etopo5_scandinavia.Rdata",
+        x.rng = c(-10, 35), y.rng = c(50, 73), plot = FALSE)
 testReg.cal(i.y=240,N=50)
 derivFFT(y)
 integrFFT(y)
@@ -57,23 +58,26 @@ testFFTcalc()
     \item{n}{Number of harmonics to fit}
     \item{method}{Regression model for fitting the harmonics}
     \item{c1}{first coefficient: the constant term}
-    \item{win.len}{window length}
+    \item{maxhar}{number of harmonix (see \code{\link{dX}})}
     \item{i.y}{}
     \item{N}{}
+    \item{x.rng}{longitude range}
+    \item{y.rng}{latitude range}
     \item{fname}{Name of topology file}
+    \item{plot}{Plot the results}
   }
 \value{}
 \author{R.E. Benestad}
 \examples{
 \dontrun{
 # Polynomial series calculus. (testReg.cal)
-
+  library(clim.pact)
   load("data/etopo5_scandinavia.Rdata")
   y <- ROSE[i.y,]
   a <- coefFit(y,n=N)
   da <- coefDeriv(a)
   a.2 <- coefInt(da,c1=a$coefs[1])
-  x11()
+  newFig()
   plot(ETOPO5X,y,type="s",lwd=3,xlab="Longitude (degE)",ylab="m.a.s.l.",
        main=paste("Transect: ",round(ETOPO5Y[i.y],1),"degE"))
   polygon(c(ETOPO5X,ETOPO5X[1320],ETOPO5X[1]),
@@ -93,7 +97,7 @@ dydx <- deriv.fft(y)
 y2 <- integr.fft(dydx)
 lines(x,y2,col="red",lty=2,lwd=2)
 grid()
-x11()
+newFig()
 plot(x,Im(dydx),type="l",lwd=3)
 grid()
 lines(x,rep(0,length(x)),col="grey")  

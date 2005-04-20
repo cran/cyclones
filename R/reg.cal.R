@@ -73,70 +73,69 @@ coefInt <- function(y,c1=0) {
   invisible(coef.int)
 }
 
-geoGrad <- function(win.len=25,fname="data/etopo5_scandinavia.Rdata") {
+geoGrad <- function(maxhar=35,fname="data/etopo5_scandinavia.Rdata",x.rng=c(-10,35),y.rng=c(50,73),plot=FALSE) {
   library(clim.pact)
   if (file.exists(fname)) load(fname) else {
      print("Try:")
      print("URL: http://www.unidata.ucar.edu/cgi-bin/dods/datasets/datasets.cgi?keyword=etopo5&xmlfilename=datasets.xml")
      print("URL: http://ferret.pmel.noaa.gov/cgi-bin/dods/nph-dods/data/PMEL/etopo5.nc.html")
   }
-  y.keep <- (ETOPO5Y >= 55) & (ETOPO5Y <= 73)
-  x.keep <- (ETOPO5X >= 0) & (ETOPO5X <= 35)
+  print("Do not reduce the region")
+
+  if (!is.null(x.rng)) {   x.keep <- (ETOPO5X >= x.rng[1]) & (ETOPO5X <= x.rng[2]) }
+  if (!is.null(y.rng)) {   y.keep <- (ETOPO5Y >= y.rng[1]) & (ETOPO5Y <= y.rng[2]) }
   ROSE <- ROSE[y.keep,x.keep]
   ETOPO5X <-ETOPO5X[x.keep]
   ETOPO5Y <-ETOPO5Y[y.keep]
   nxy <- dim(ROSE)
   grad.ew <- ROSE*0
   grad.ns <- ROSE*0
-#  for (i in 1:nxy[1]) {
-#    y <- ROSE[i,]
-#    i.sea <-y < 0 
-#    y[i.sea] <- 0
-#    a <- coef.fit(y,n=100)
-#    da <- coef.deriv(a)
-#    y.fix <- da$y.deriv
-#    y.fix <- gauss.filt(y.fix,win.len)
-#    y.fix[i.sea] <- 0
-#    if (mod(i,10)==0) {
-#      plot(ETOPO5X,y,type="s",lwd=3)
-#      lines(ETOPO5X,a$y.hat,col="blue",lty=2)
-#      lines(ETOPO5X,da$y.deriv/quantile(da$y.deriv,0.9)*quantile(y,0.7),
-#            col="red")
-#      lines(ETOPO5X,y.fix/quantile(da$y.deriv,0.9)*quantile(y,0.7),
-#            col="darkred")
-#      grid()
-#    }
-#    grad.ew[i,] <- y.fix    
-#  }
+
+  if (plot) {
+    newFig()
+    image(ETOPO5X,ETOPO5Y,t(ROSE))
+    addland()
+    grid()
+    dev.copy2eps(file="geoGrad_z.eps")
+  }
 
   print("GRADIENT E-W")
-  grad.ew <- dx(ETOPO5X,ETOPO5Y,t(ROSE))
-  x11()
-  image(ETOPO5X,ETOPO5Y,grad.ew$dZ)
-  addland()
-  grid()
-
-#  for (i in 1:nxy[2]) {
-#    y <- ROSE[,i]
-#    i.sea <-y < 0 
-#    y[i.sea] <- 0
-#    a <- coef.fit(y,n=100)
-#    da <- coef.deriv(a)
-#    y.fix <- da$y.deriv
-#    y.fix <- gauss.filt(y.fix,win.len)
-#    y.fix[i.sea] <- 0
-#    grad.ns[,i] <- y.fix
-#  }
+  grad.ew <- dX(ETOPO5X,ETOPO5Y,t(ROSE),maxhar=maxhar,plot=plot)
+  if (plot) {
+    newFig()
+    image(ETOPO5X,ETOPO5Y,grad.ew$dZ)
+    addland()
+    grid()
+    dev.copy2eps(file="geoGrad_dz.dx.eps")
+  }
 
   print("GRADIENT N-S")
-  grad.ns <- dy(ETOPO5X,ETOPO5Y,t(ROSE))
-  x11()
-  image(ETOPO5X,ETOPO5Y,grad.ns$dZ)
-  addland()
-  grid()
+  grad.ns <- dY(ETOPO5X,ETOPO5Y,t(ROSE),maxhar=maxhar,plot=plot)
+  
+  if (plot) {
+    newFig()
+    image(ETOPO5X,ETOPO5Y,grad.ns$dZ)
+    addland()
+    grid()
+    dev.copy2eps(file="geoGrad_dz.dy.eps")
+  }
 
-  slope <- sqrt(grad.ew^2 + grad.ns^2)
-  direction <- atan2(grad.ns,grad.ew)
+  slope <- sqrt(grad.ew$dZ^2 + grad.ns$dZ^2)
+  if (plot) {
+    newFig()
+    image(ETOPO5X,ETOPO5Y,slope)
+    addland()
+    grid()
+    dev.copy2eps(file="geoGrad_slope.eps")
+  }
+  direction <- atan2(grad.ns$dZ,grad.ew$dZ)
+  if (plot) {
+    newFig()
+    image(ETOPO5X,ETOPO5Y,direction)
+    addland()
+    grid()
+    dev.copy2eps(file="geoGrad_direction.eps")
+  }
   save(file="data/geo.grad2.Rdata",grad.ew,grad.ns,
        slope,direction,ETOPO5X,ETOPO5Y)
 }
@@ -152,7 +151,7 @@ testReg.cal <- function(i.y=240,N=50) {
 #  print(da$coef.deriv)
 #  print(c(a$coefs[1],da$coef.deriv[2],da$coef.deriv[3]/2,da$coef.deriv[4]/3))
 #  print(a.2$coef.int)
-  x11()
+  newFig()
   plot(ETOPO5X,y,type="s",lwd=3,xlab="Longitude (degE)",ylab="m.a.s.l.",
        main=paste("Transect: ",round(ETOPO5Y[i.y],1),"degE"))
   polygon(c(ETOPO5X,ETOPO5X[1320],ETOPO5X[1]),
@@ -252,7 +251,7 @@ testFFTcalc <- function() {
   y2 <- integr.fft(dydx)
   lines(x,y2,col="red",lty=2,lwd=2)
   grid()
-  x11()
+  newFig()
   plot(x,Im(dydx),type="l",lwd=3)
   grid()
   lines(x,rep(0,length(x)),col="grey")  

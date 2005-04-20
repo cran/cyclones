@@ -4,8 +4,9 @@
 #
 # also see reg.cal.R, dx, dy
 
-dT <- function(y,maxhar=NULL) {
+dT <- function(y,maxhar=NULL,plot=FALSE) {
   Y <- y
+  if (plot) plot(y)
   nt <- length(y)
   if (is.null(maxhar)) maxhar <- nt
   maxhar <- min(nt,maxhar)
@@ -34,7 +35,7 @@ dT <- function(y,maxhar=NULL) {
       dy <- dy +iw*W*( -a[iw]*sin(wt) + b[iw]*cos(wt) )
     }
   }
-
+  if (plot) lines(y.fit,lwd=2,col="grey")
   results <- list(y=Y,a=a,b=b,c=c,dy=dy,y.fit=y.fit)
   class(results) <- "dydt"
   attr(results,"long_name") <- "t-derivative"

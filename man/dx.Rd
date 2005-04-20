@@ -26,9 +26,9 @@ Also see \code{\link{derivFFT}}.
 }
 
 \usage{
-dX(lon,lat,Z,r=6.378e06,maxhar=NULL,mask.bad=TRUE)
-dY(lon,lat,Z,r=6.378e06,maxhar=NULL,mask.bad=TRUE)
-dT(y,maxhar=NULL)
+dX(lon,lat,Z,r=6.378e06,maxhar=NULL,mask.bad=TRUE,plot=FALSE)
+dY(lon,lat,Z,r=6.378e06,maxhar=NULL,mask.bad=TRUE,plot=FALSE)
+dT(y,maxhar=NULL,plot=FALSE)
 }
 \arguments{
     \item{lon}{Longitudes}
@@ -38,6 +38,7 @@ dT(y,maxhar=NULL)
     \item{maxhar}{Number of harmonics to include. If NULL, \code{maxhar} is set to the length of the series.}
     \item{mask.bad}{}
     \item{y}{a time series (vector).}
+    \item{plot}{plot data and fit}
   }
 \value{A list: list(Z=Z,a=a,b=b,c=c,dZ=dZ,Z.fit=Z.fit,lon=lon,lat=lat)
 of class "map"}
