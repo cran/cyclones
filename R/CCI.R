@@ -4,7 +4,7 @@ library(ncdf)
 CCI <- function(maxhar=25,lplot=TRUE,nsim=10,fname="data/cyclones.Rdata",
                 fielddata="data/nmc_slp.nc",vname="slp",cyclones=TRUE,force365.25=FALSE,
                 x.rng=c(-80,40),y.rng=c(20,75),tslice=3652,rad=5,dx=1,dy=1,
-                times=NULL,label=NULL,rho=1.293) {
+                times=NULL,label=NULL,rho=1.293,nc.read.method="retrieve.nc") {
 
 library(clim.pact)
 library(akima)
@@ -17,11 +17,17 @@ print("run stopCCI() in the same running directory to stop the process")
 if (is.null(times) & (file.exists(fielddata))) {
   print(paste("Checking",fielddata,"for updating..."))
   ncid <- open.ncdf(fielddata)
-  nv <- ncid$nvars; ipick <- 1
+  nv <- ncid$nvars; 
+  cdfvars <- rep("-",nv) 
+  for (i in 1:nv) cdfvars[i] <- ncid$var[[i]]$name
+  print(cdfvars)
+  ipick <- grep(vname,cdfvars)
+  #print(ipick)
   nd <- ncid$var[[ipick]]$ndims
   cdfdims <- rep("-",nd)
   for (i in 1:nd) cdfdims[i] <- ncid$var[[ipick]]$dim[[i]]$name
-  itim <- grep("tim",lower.case(cdfdims))
+  print("Dimensions:");print(cdfdims)  
+  itim <- grep("tim",lower.case(substr(cdfdims,1,3)))
   tim <- get.var.ncdf(ncid,cdfdims[itim])
   close.ncdf(ncid)
   NT <- length(tim)
@@ -29,7 +35,6 @@ if (is.null(times) & (file.exists(fielddata))) {
   if (max(times) < NT) times <- c(times,NT)
 }
 NT <- max(times)
-
 
 if (is.null(label)) label <- paste(fielddata,": ",vname,sep="")
 print(paste("label=",label))
@@ -79,8 +84,8 @@ ii <- i.max
 
 for(is in 1:(length(times)-1)) {
 print(paste("is=",is,"times[is]=",times[is],"times[is+1]-1=",times[is+1]-1))
-slp <- retrieve.nc(fielddata,vname,x.rng=x.rng,y.rng=y.rng,
-                  t.rng=c(times[is],times[is+1]-1),force365.25=force365.25)
+slp <- eval(parse(text=paste(nc.read.method,"(fielddata,vname,x.rng=x.rng,y.rng=y.rng,",
+                  "t.rng=c(times[is],times[is+1]-1),force365.25=force365.25)",sep="")))
 nx <- length(slp$lon)
 dlon <- slp$lon[2] - slp$lon[1]
 ny <- length(slp$lat)
@@ -324,7 +329,8 @@ if (sum(slp$tim > max(tim))>0) {
     dev.off()
 
 # X-profile:
-    bitmap(file = "cyclones_x.jpg",type="jpeg",width=15, height=15, res=250)     
+    postscript(file = paste("cyclones_x_",vname,ii,".eps",sep=""),onefile=FALSE,horizontal=FALSE)
+    #bitmap(file = "cyclones_x.jpg",type="jpeg",width=15, height=15, res=250)     
     plot(lonx,slpmap[,ilat1]+mslpmap[,ilat1],ylim=c(950,1050),
          main=paste("SLP profile at ",slp$lat[ilat1],"N",sep=""),
          xlab="Longitude (deg E)",ylab="SLP (hPa)",

@@ -13,7 +13,7 @@ This code is the basis for the analysis carried out by Benestad et al. 'The use 
 CCI(maxhar=25,lplot=TRUE,nsim=10,fname="data/cyclones.Rdata",
     fielddata="data/nmc_slp.nc",vname="slp",cyclones=TRUE,force365.25=FALSE,
     x.rng=c(-80,40),y.rng=c(20,75),tslice=3652,rad=5,dx=1,dy=1,
-    times=NULL,label=NULL,rho=1.293)
+    times=NULL,label=NULL,rho=1.293,nc.read.method="retrieve.nc")
 stopCCI()
 }
 \arguments{
@@ -34,6 +34,7 @@ stopCCI()
     \item{times}{Specify time slices for reading chunks of data.}
     \item{label}{Label for ID-purposes.}
     \item{rho}{Density of air for calculation of geostrophic wind.}
+    \item{nc.read.method}{Method to read netCDF or other gridded data. Can be set to a custom made routine.THe output should be a 'field'-type object.}
   }
 \value{
 A list: \code{list(lon=lon, lat, tim, psl, yy, mm, dd, i, label, max.dpsl, max.speed, radius, rad.max.dpsl, dx, dy)}. The subobjects \code{lon} (longitude: units degrees), \code{lat} (latitude: units: degrees), \code{psl} (local minimum pressure: units hPa), \code{max.dpsl} (pressure gradient: units Pa/m), \code{max.speed} (windspeed: units m/s), and \code{radius} (radius of the storm: units km) are \code{[1:nt,1:i.sim]}-matrices. 
