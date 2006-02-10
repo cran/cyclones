@@ -2,6 +2,9 @@
 \alias{dX}
 \alias{dY}
 \alias{dT}
+\alias{test.dX}
+\alias{test.dY}
+\alias{test.dT}
 \title{First derivatives from harmonic fits.}
 \description{
 
@@ -23,12 +26,26 @@ and dp(x)/dx is \deqn{\frac{dp(x)}{dx} = \sum[w_i(-a_i \sin(w_i x) +
 b_i \cos(w_i x))]}{dp(x)/dx = sum(w[i](-a[i] sin(w[i]*x) + b[i]cos(w[i]*x)))}
 
 Also see \code{\link{derivFFT}}.
+
+Version 1.1-6:
+
+(i) Correction to the wave number in \code{dX} and \code{dY} -
+previously wave number was scaled as 1/[number of points] and gave incorrect magnitudes for the derivatives, but now the wave number is 1/distance.
+
+(ii) Included a simple confidence check (chk.conf) to set coefficients
+to zero when +- 1 sd includes zero. This check can be disabled. Note, it
+is recommended to use the minimum value for maxhar.
+
+(iii) Included new test routines to test the magnitudes of the gradients.
 }
 
 \usage{
-dX(lon,lat,Z,r=6.378e06,maxhar=NULL,mask.bad=TRUE,plot=FALSE)
-dY(lon,lat,Z,r=6.378e06,maxhar=NULL,mask.bad=TRUE,plot=FALSE)
-dT(y,maxhar=NULL,plot=FALSE)
+dX(lon,lat,Z,r=6.378e06,maxhar=NULL,mask.bad=TRUE,plot=FALSE,chk.conf=1)
+dY(lon,lat,Z,r=6.378e06,maxhar=NULL,mask.bad=TRUE,plot=FALSE,chk.conf=1)
+dT(y,maxhar=NULL,plot=FALSE,chk.conf=1)
+test.dX(field=NULL,maxhar=7)
+test.dY(field=NULL,maxhar=5)
+test.dT(y=NULL,maxhar=15)
 }
 \arguments{
     \item{lon}{Longitudes}
@@ -39,6 +56,9 @@ dT(y,maxhar=NULL,plot=FALSE)
     \item{mask.bad}{}
     \item{y}{a time series (vector).}
     \item{plot}{plot data and fit}
+    \item{field}{Field to which the test is applied (default: DNMI.slp)}
+    \item{chk.conf}{If not NULL, test whether conf. int. (+- chk.conf * sd) includes zero - if
+                    so, set coefficient to zero.}
   }
 \value{A list: list(Z=Z,a=a,b=b,c=c,dZ=dZ,Z.fit=Z.fit,lon=lon,lat=lat)
 of class "map"}

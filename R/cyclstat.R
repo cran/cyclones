@@ -73,7 +73,8 @@ for (i in 1:length(date.ovlp)) {
   ii <- is.element(results$yy*10000+results$mm*100+results$dd,date.ovlp)
   results$psl[ii][(median(n.obs)+1):sum(ii)] <- NA
 }
-
+print(paste("Time resolution is",t.scl,"days"))
+            
 nobs <- length(results$yy)
 t.scal <- 365.25/nobs
 nlon <- min(results$lon,na.rm=TRUE); xlon <- max(results$lon,na.rm=TRUE);
@@ -128,6 +129,7 @@ print(clons); print(clats)
 print(paste("Grid box size= ",2*dx,"x",2*dy))
 
 postscript(file = "cyclstat.eps",onefile=FALSE,horizontal=FALSE)
+par(las=1)
 image(lons,lats,mask,main="Cyclone count per year",lwd=2,
       xlab="Longitude (deg E)",ylab="Latitude (deg N)",
       sub=paste("Period:",min(results$yy,na.rm=TRUE),"-",
@@ -141,8 +143,33 @@ if (cmp) {
 }
 grid()
 addland()
+while (dev.cur() > 1) dev.off()
+if (cmp) {
+  postscript(file = "cyclstat_1a.eps",onefile=FALSE,horizontal=FALSE)
 
-if (dev.cur() > 1) dev.off()
+  par(las=1,mfcol=c(1,2))
+  levels=seq(round(floor(min(c(cfrq)))),round(ceiling(max(c(cfrq)))),length=11)
+  image(lons,lats,mask,main="Cyclone count per year (NMC)",lwd=2,
+      xlab="Longitude (deg E)",ylab="Latitude (deg N)",
+      sub=paste("Period:",min(results$yy,na.rm=TRUE),"-",
+      max(results$yy,na.rm=TRUE)," psl0=",psl0),col=my.col,levels=c(0,1))
+  polygon(c(x.rng[1],rep(x.rng[2],2),rep(x.rng[1],2)),
+        c(rep(y.rng[1],2),rep(y.rng[2],2),y.rng[1]),edge="grey70",lty=2)
+  contour(clons,clats,cfrq,lwd=2,add=TRUE,levels=levels)
+  grid()
+  addland()
+  levels=seq(round(floor(min(c(cfrq-cfrq2)))),round(ceiling(max(c(cfrq-cfrq2)))),length=11)
+  image(lons,lats,mask,main="Cyclone count difference per year",lwd=2,
+      xlab="Longitude (deg E)",ylab="Latitude (deg N)",
+      sub=paste("Period:",min(results$yy,na.rm=TRUE),"-",
+      max(results$yy,na.rm=TRUE)," psl0=",psl0),col=my.col,levels=c(0,1))
+  polygon(c(x.rng[1],rep(x.rng[2],2),rep(x.rng[1],2)),
+        c(rep(y.rng[1],2),rep(y.rng[2],2),y.rng[1]),edge="grey70",lty=2)
+  contour(clons,clats,cfrq-cfrq2,lwd=2,add=TRUE,levels=levels)
+  grid()
+  addland()
+  while (dev.cur() > 1) dev.off()
+}
 
 
 postscript(file = "cyclstat.scratch.eps",onefile=FALSE,horizontal=FALSE)
@@ -153,6 +180,9 @@ ncyymm <- rep(NA,12*nyrs)
 ncmm <- rep(0,12); scmm <- rep(0,12)
 yymm <- sort(rep(years,12)) + (rep(1:12,nyrs)-0.5)/12
 ncyymm2 <- ncyymm; ncmm2 <- ncmm; scmm2 <- scmm
+
+print(t.scal)
+
 for (iy in 1:nyrs) {
   for (im in 1:12) {
     immyy <- (results$mm==im) & (results$yy==years[iy]) 
@@ -194,11 +224,13 @@ for (iy in 1:nyrs) {
   }
 }
 
+
 nt <- length(ncyymm); ind <- 1:nt
 ift <- ind[!is.na(ncyymm)][1]-1; itf <- reverse(ind[!is.na(ncyymm)])[1]
 ifix <- is.na(ncyymm) & c(rep(FALSE,ift),rep(TRUE,nt-ift)) & 
                         c(rep(TRUE,itf),rep(FALSE,nt-itf))
 ncyymm[ifix] <- 0
+
 if (cmp) {
 ift <- ind[!is.na(ncyymm2)][1]-1; itf <- reverse(ind[!is.na(ncyymm2)])[1]
 ifix <- is.na(ncyymm2) & c(rep(FALSE,ift),rep(TRUE,nt-ift)) & 
@@ -209,8 +241,18 @@ dev.off()
 
 # Final figure
 
-postscript(file = "cyclstat2.eps",onefile=FALSE,horizontal=FALSE)
+# Fix - REB 15.11.2005:
+#print(summary(ncyymm))
+#ncyymm[!is.finite(ncyymm)] <- 0
+#print("HERE")
+#print(summary(ncyymm))
+#print(range(ncyymm,na.rm=TRUE))
+#x11(); plot(ncyymm); lines(ma.filt(ncyymm,12))
+#print(ncyymm,12)
+#print(ma.filt(ncyymm,12))
 
+postscript(file = "cyclstat2.eps",onefile=FALSE,horizontal=FALSE)
+par(las=1)
 plot(range(yymm),range(ma.filt(ncyymm,12),na.rm=TRUE)*c(0,1.75),type="n",
          xlab="time",ylab="count/month",sub=subtit,
          main=paste("Cyclone count",min(years),"-",max(years)))
@@ -272,7 +314,7 @@ scmm2 <- sqrt(scmm2/(nyrs-1) )
 }
 
 postscript(file = "cyclstat3.eps",onefile=FALSE,horizontal=FALSE)
-par(col.axis="white")
+par(col.axis="white",las=1)
 plot(c(1,24),range(ncmm+scmm,na.rm=TRUE)*c(0,1.75),main="seasonal cyclone variability",
      type="n",xlab="Month",ylab="Mean storm count/month",sub=subtit)
 sdv1 <- c(rep(ncmm+scmm,2),reverse(rep(ncmm-scmm,2))); sdv1[sdv1 < 0] <- 0
@@ -295,6 +337,7 @@ mm <- rep(1:12,nyrs); yy <- sort(rep(years,12))
 if (!is.null(mon)) imon <- is.element(mm,mon) else imon <- rep(TRUE,length(mm))
 
 postscript(file = "cyclstat4.eps",onefile=FALSE,horizontal=FALSE)
+par(las=1)
 x <- seq(0,max(ncyymm[imon],na.rm=TRUE)+10,by=1)
 mu <- mean(ncyymm[imon],na.rm=TRUE)
 #poisson <- exp(-mu+x*log(mu)-cumsum(x))

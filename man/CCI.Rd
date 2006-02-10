@@ -1,20 +1,28 @@
 \name{CCI}
 \alias{CCI}
 \alias{stopCCI}
+\alias{gradient.wind}
 \title{Calculus Cyclone identification.}
 \description{
 Identifies cyclones (low pressure systems) in a gridded data set using a Calculus Cyclone Identification (CCI) method (EMS04-A-00146, Benestad, R.E.; Sorteberg, A.; Chen, D. 'Storm statistics derived using a calculus-based cyclone identification method', \url{http://www.cosis.net/members/meetings/sessions/oral_programme.php?p_id=110&s_id=1845}, European Meteorological Society AC2, Nice, Sept 28, 2004). Storms are identified with longitude, latitude, and date. Also returned are estimates of local minimum pressure, max pressure gradient near storm, max geostrophic windspeed near storm, and radius of the storm. The storm location is by means of finding where first derivatives of north--south and east--west gradients both are zero. The storm radius is estimated from the points of inflexion along the latitude and longitude lines running trough the centre of the storm. 
 
 This code is the basis for the analysis carried out by Benestad et al. 'The use of a Calculus-based Cyclone Identification method for generating storm statistics' submitted to Climate Dynamics (2004).
 
-\code{stopCCI} signals the CCI process to stop in a safe manner by removing the file '.CCI.run' in the run directory. 
+\code{stopCCI} signals the CCI process to stop in a safe manner by
+removing the file '.CCI.run' in the run directory.
+
+\code{gradient.wind} estimated the gradient wind of the data produced by
+CCI after Fleagle and Businger (1980) p. 163. (eq 4.27). 
+
 } 
 \usage{
-CCI(maxhar=25,lplot=TRUE,nsim=10,fname="data/cyclones.Rdata",
+CCI(maxhar=14,lplot=TRUE,nsim=10,fname="data/cyclones.Rdata",
     fielddata="data/nmc_slp.nc",vname="slp",cyclones=TRUE,force365.25=FALSE,
-    x.rng=c(-80,40),y.rng=c(20,75),tslice=3652,rad=5,dx=1,dy=1,
-    times=NULL,label=NULL,rho=1.293,nc.read.method="retrieve.nc")
+    x.rng=c(-80,40),y.rng=c(5,75),tslice=3652,rad=5,dx=1,dy=1,
+    times=NULL,label=NULL,rho=1.293,nc.read.method="retrieve.nc",
+    graph.dir="CCI.graphs/",plot.interval=50,EPS=TRUE)
 stopCCI()
+gradient.wind(storms=NULL,icyclone=1)
 }
 \arguments{
     \item{maxhar}{number of harmonics used for fit to profile (Fourier truncation)}
@@ -29,15 +37,34 @@ stopCCI()
     \item{y.rng}{Latitude region of interest.}
     \item{tslice}{Number of maps read per chunk of data (time slice).}
     \item{rad}{Max radius of cyclone.}
-    \item{dx}{Resolution in longitude (in degrees).}
-    \item{dy}{Resolution in latitudes (in degrees).}
+    \item{dx}{Resolution in longitude (in degrees). NULL skips interpolation - uses original grid}
+    \item{dy}{Resolution in latitudes (in degrees). NULL skips interpolation - uses original grid}
     \item{times}{Specify time slices for reading chunks of data.}
     \item{label}{Label for ID-purposes.}
     \item{rho}{Density of air for calculation of geostrophic wind.}
-    \item{nc.read.method}{Method to read netCDF or other gridded data. Can be set to a custom made routine.THe output should be a 'field'-type object.}
+    \item{nc.read.method}{Method to read netCDF or other gridded
+      data. Can be set to a custom made routine.THe output should be a
+      'field'-type object.}
+    \item{graph.dir}{Name of the directory in which to store the
+      graphical output.}
+    \item{plot.interval}{Interval between the generation of each
+      graphical output}
+    \item{EPS}{TRUE for generation of encapsulated PostScript graphics, FALSE for PNG
+      bitmaps. PNG bitmaps are useful for animatio (e.g. animate
+      cci*.png; \url{http://www.imagemagick.org}), whereas postscript versions are good for hard copies.}
+    \item{storms}{Data object returned by CCI with cyclone statistics.}
+    \item{icyclone}{Decides which cyclone to do the gradient wind estimate for (eg 1 is for the deepest
+      cyclone, 2 for the second deepest, etc).}
   }
 \value{
-A list: \code{list(lon=lon, lat, tim, psl, yy, mm, dd, i, label, max.dpsl, max.speed, radius, rad.max.dpsl, dx, dy)}. The subobjects \code{lon} (longitude: units degrees), \code{lat} (latitude: units: degrees), \code{psl} (local minimum pressure: units hPa), \code{max.dpsl} (pressure gradient: units Pa/m), \code{max.speed} (windspeed: units m/s), and \code{radius} (radius of the storm: units km) are \code{[1:nt,1:i.sim]}-matrices. 
+A list: \code{list(lon=lon, lat, tim, psl, yy, mm, dd, i, label,
+  max.dpsl, max.speed, radius, rad.max.dpsl, dx, dy)}. The subobjects
+\code{lon} (longitude: units degrees), \code{lat} (latitude: units:
+degrees), \code{psl} (local minimum pressure: units hPa),
+\code{max.dpsl} (pressure gradient: units Pa/m), \code{max.speed} 
+(windspeed: units m/s if the units of SLP are in hPa), and \code{radius}
+(radius of the storm: units km) are
+\code{[1:nt,1:i.sim]}-matrices. \code{v.grad} is the estimated gradient wind.
 }
 \author{R.E. Benestad}}
 \examples{

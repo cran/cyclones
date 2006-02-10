@@ -1,15 +1,6 @@
-cyclones                Cyclone identification.
-CCI			Calculus Cyclone Identification
-cyclstat		Cyclone statistics and analysis
-dX			zonal gradient
-dY			meridional gradient
-dT			rate of change
-coefFit			Fit coefficients for a series of harmonics
-coefDeriv		Use fitted harmonics to differentiate
-coefInt			Use fitted harmonics to integrate
-geoGrad			Topographical gradients east--west, north--south)
-testReg.cal		a test function
-derivFFT		Use FFT results to differentiate
-integrFFT		use FFT results to integrate
-testFFTcalc		a test function
-filters			a set of filter types.
+CCI                     Calculus Cyclone identification.
+coefFit                 REGression based CALculus for empirical data
+cyclstat                Cyclone statistics
+dX                      First derivatives from harmonic fits.
+ma.filt                 Various filters.
+storms                  North Atlantic cyclone statistics.

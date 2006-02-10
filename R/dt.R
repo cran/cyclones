@@ -4,7 +4,7 @@
 #
 # also see reg.cal.R, dx, dy
 
-dT <- function(y,maxhar=NULL,plot=FALSE) {
+dT <- function(y,maxhar=NULL,plot=FALSE,chk.conf=1) {
   Y <- y
   if (plot) plot(y)
   nt <- length(y)
@@ -24,12 +24,15 @@ dT <- function(y,maxhar=NULL,plot=FALSE) {
       harmfit <- data.frame(y=y, x1=x1, x2=x2)
       harmonic <- lm(y ~ x1 + x2,data=harmfit)
       y[good] <- harmonic$residual
-      c[iw] <- harmonic$coefficients[1]
-      a[iw] <- harmonic$coefficients[2]
-      b[iw] <- harmonic$coefficients[3]
-      if (!is.finite(c[iw])) c[iw] <- 0
-      if (!is.finite(b[iw])) b[iw] <- 0
-      if (!is.finite(a[iw])) a[iw] <- 0
+      c[iw] <- harmonic$coefficients[1]; if (!is.finite(c[iw])) c[iw] <- 0
+      a[iw] <- harmonic$coefficients[2]; if (!is.finite(a[iw])) a[iw] <- 0
+      b[iw] <- harmonic$coefficients[3]; if (!is.finite(b[iw])) b[iw] <- 0
+      if (!is.null(chk.conf)) {
+         stats <- summary(harmonic)
+         if (abs(stats$coefficients[4])*chk.conf > abs(stats$coefficients[1]))  c[iw] <- 0
+         if (abs(stats$coefficients[5])*chk.conf > abs(stats$coefficients[2]))  a[iw] <- 0
+         if (abs(stats$coefficients[6])*chk.conf > abs(stats$coefficients[3]))  b[iw] <- 0
+      }       
 
       y.fit <- y.fit + a[iw]*cos(wt) + b[iw]*sin(wt) + c[iw]
       dy <- dy +iw*W*( -a[iw]*sin(wt) + b[iw]*cos(wt) )
