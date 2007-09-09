@@ -1,5 +1,5 @@
 
-within <- function(x,y,X,Y,plot=FALSE,test=FALSE) {
+within <- function(x,y,X,Y,test=FALSE,plot=FALSE) {
 
   center.X <- mean(X,na.rm =TRUE)
   center.Y <- mean(Y,na.rm =TRUE)
@@ -28,57 +28,8 @@ within <- function(x,y,X,Y,plot=FALSE,test=FALSE) {
 }
 
 
-within.old <- function(x,y,X,Y,test=FALSE) {
-  x <- x[is.finite(x)]; y <- y[is.finite(y)]   
-  n1 <- (x >= min(X,na.rm=TRUE)) & (x <= max(X,na.rm=TRUE)) &
-        (y >= min(Y,na.rm=TRUE)) & (y <= max(Y,na.rm=TRUE))
-  #print(sum(n1))
-  N <- rep(FALSE,length(n1))
-  nx <- length(X)
 
-  if (test) points(x[n1],y[n1],pch=20,col="green",cex=0.9)
-  first <- TRUE
-  #print(sum(n1,na.rm=TRUE))
-  if (sum(n1)>0) {
-  for (i in seq(1,sum(n1,na.rm=TRUE),by=1)) {
-    xx <- x[n1][i]; yy <- y[n1][i]
-    if (is.finite(yy) & is.finite(xx)) {
-      icross <- c((X[2:nx] - xx)*(X[1:(nx-1)] - xx) <= 0)
-      if (sum(icross,na.rm=TRUE)==2) {
-        X.x <- X[2:nx][icross]
-        Y.x <- Y[2:nx][icross]
-        if (length(Y.x)==2) {
-          if (yy < min(Y.x,na.rm=TRUE) | yy > max(Y.x,na.rm=TRUE) |
-              xx < min(X.x,na.rm=TRUE) | xx > max(X.x,na.rm=TRUE)) {
-            N[n1][i] <- FALSE
-            if (first) {
-              if (test) points(xx,yy,pch=20,col="steelblue",cex=2.5)
-              if (test) lines(X.x,Y.x,col="steelblue")
-              if (test) lines(c(X.x,xx),c(Y.x,yy),col="steelblue",lty=3)
-#              first <- FALSE
-            }
-          } else {
-              if (test) print(paste(i,"point:",xx,yy,"X.x:",X.x,"Y.y",Y.x))
-              if (test) points(xx,yy,pch=20,col="yellow",cex=2.5)
-              N[n1][i] <- TRUE
-          }
-        }  else {
-        if (test) points(xx,yy,pch=20,col="grey80",cex=2.5)
-        n1[n1][i] <- FALSE
-        if (test) print(paste(" ---> ",i,"point:",xx,yy,"X.x:",X.x,"Y.y",Y.x))
-        } # else & if length==2
-      } else {
-        if (test) points(xx,yy,pch=20,col="wheat",cex=2.5)
-        n1[n1][i] <- FALSE
-        if (test) print(paste(" =======> ",i,"point:",xx,yy,"X.x:",X.x,"Y.y",Y.x))
-      } # else & if sum==2?
-    }  # is.finite? 
-  } # for loop i
-  } # end if
-  invisible(N)
-}
-
-test.within <- function(a=3,b=5) {
+testWithin <- function(a=3,b=5) {
   x <- seq(-a,a,length=1000)
   y <- b*sqrt(1 - (x/a)^2)
   plot(c(x,-x),c(-y,y),type="l",xlim=c(-a-b,a+b),ylim=c(-a-b,a+b),

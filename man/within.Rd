@@ -1,16 +1,14 @@
 \name{within}
 \alias{within}
-\alias{within.old}
-\alias{test.within}
+\alias{testWithin}
 \title{Points within an area.}
 \description{
 Finds points within a given closed 2-D boundary.
 }
 
 \usage{
-within(x,y,X,Y,plot=FALSE,test=FALSE)
-within.old(x,y,X,Y,test=FALSE)
-test.within(a=3,b=5)
+within(x,y,X,Y,test=FALSE,plot=FALSE)
+testWithin(a=3,b=5)
 }
 \arguments{
     \item{x}{vector with x-cordinates to test if they lie inside given boundary.}
