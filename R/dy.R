@@ -7,7 +7,13 @@
 # R.E. Benestad, 26.06.2003.
 #
 # also see reg.cal.R
-dY <- function(lon,lat,Z,r=6.378e06,maxhar=NULL,mask.bad=TRUE,plot=FALSE,chk.conf=1) {
+dY <- function(lon,lat,Z,r=6.378e06,maxhar=NULL,mask.bad=TRUE,plot=FALSE,chk.conf=1,accuracy=NULL) {
+
+# REB: 08.02.2007: To improve accuracy/spatial resolution of the fit
+  if (is.null(accuracy)) accuracy <-  max(diff(lat))
+  LAT <- seq(min(lat),max(lat),by=accuracy)
+  NY <- length(LAT)
+
   ny <- length(lat)
   nx <- length(lon)
   if (is.null(maxhar)) maxhar <- ny
@@ -19,8 +25,13 @@ dY <- function(lon,lat,Z,r=6.378e06,maxhar=NULL,mask.bad=TRUE,plot=FALSE,chk.con
   a <- matrix(rep(0,ny*nx),nx,ny)
   b <- matrix(rep(0,ny*nx),nx,ny)
   c <- matrix(rep(0,ny*nx),nx,ny)
-  dZ <- matrix(rep(0,ny*nx),nx,ny)
-  Z.fit <- matrix(rep(0,ny*nx),nx,ny)
+#  dZ <- matrix(rep(0,ny*nx),nx,ny)
+#  Z.fit <- matrix(rep(0,ny*nx),nx,ny)
+
+# REB: 08.02.2007:
+  dZ <- matrix(rep(0,NY*nx),nx,NY)
+  Z.fit <- matrix(rep(0,NY*nx),nx,NY)
+  
   dy <- distAB(lon[1],lat[1],lon[1],lat[2])[1]/1000  # REB: fix - units in km;
   attr(dy,"units") <- "km"                        # REB: fix - units in km;
   
@@ -30,6 +41,8 @@ dY <- function(lon,lat,Z,r=6.378e06,maxhar=NULL,mask.bad=TRUE,plot=FALSE,chk.con
      good <- is.finite(y)
      if (sum(good)>7) {
        wt <- iw*W*seq(1,ny,by=1)
+       WT <- seq(min(wt),max(wt),by=accuracy)    # REB: 08.02.2007
+
        x1 <- cos(wt); x2 <- sin(wt)
        harmfit <- data.frame(y=y, x1=x1, x2=x2)
        harmonic <- lm(y ~ x1 + x2,data=harmfit)
@@ -43,20 +56,24 @@ dY <- function(lon,lat,Z,r=6.378e06,maxhar=NULL,mask.bad=TRUE,plot=FALSE,chk.con
          if (abs(stats$coefficients[5])*chk.conf > abs(stats$coefficients[2]))  a[i,iw] <- 0
          if (abs(stats$coefficients[6])*chk.conf > abs(stats$coefficients[3]))  b[i,iw] <- 0
        }
-       dZ[i,] <- dZ[i,] + iw*W*( -a[i,iw]*sin(wt) + b[i,iw]*cos(wt) ) 
-        
+       dZ[i,] <- dZ[i,] + iw*W*( -a[i,iw]*sin(wt) + b[i,iw]*cos(wt) )         
 #      Z.fit[i,] <- Z.fit[i,] + predict(harmonic,newdata=harmfit)
        Z.fit[i,] <- Z.fit[i,] + a[i,iw]*cos(wt) + b[i,iw]*sin(wt) + c[i,iw]
+
+# REB: 08.02.2007:
+#       dZ[i,] <- dZ[i,] + iw*W*( -a[i,iw]*sin(WT) + b[i,iw]*cos(WT) )   
+#       Z.fit[i,] <- Z.fit[i,] + a[i,iw]*cos(WT) + b[i,iw]*sin(WT) + c[i,iw]
      }
     }
-    if (plot) {plot(Z[i,],main=(paste("dY:",i,"of",nx)),xlab="x",ylab="z"); lines(Z.fit[i,],lwd=2,col="grey")}
+    if (plot) {plot(Z[i,],main=(paste("dY:",i,"of",nx)),xlab="x",ylab="z")
+               lines(Z.fit[i,],lwd=2,col="grey")}
   }
   dZ <- dZ/dy
   if (mask.bad) {
     dZ[mask] <- NA
     Z.fit[mask] <- NA
   }
-  results <- list(Z=Z,a=a,b=b,c=c,dZ=dZ,Z.fit=Z.fit,lon=lon,lat=lat,dy=dy)
+  results <- list(Z=Z,a=a,b=b,c=c,dZ=dZ,Z.fit=Z.fit,lon=lon,lat=LAT,dy=dy)
   class(results) <- "map"
   attr(results,"spatial units") <- "km"
   attr(results,"long_name") <- "y-derivative"

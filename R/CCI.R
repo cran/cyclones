@@ -5,14 +5,14 @@ CCI <- function(maxhar=14,lplot=TRUE,nsim=10,fname="data/cyclones.Rdata",
                 fielddata="data/nmc_slp.nc",vname="slp",cyclones=TRUE,force365.25=FALSE,
                 x.rng=c(-80,40),y.rng=c(5,75),tslice=3652,rad=5,dx=1,dy=1,
                 times=NULL,label=NULL,rho=1.293,nc.read.method="retrieve.nc",
-                graph.dir="CCI.graphs/",plot.interval=50,EPS=TRUE) {
+                graph.dir="CCI.graphs/",plot.interval=50,EPS=TRUE,verbose=TRUE,accuracy=NULL) {
 
 library(clim.pact)
 library(akima)
 
-
-if (substr(graph.dir,nchar(graph.dir),nchar(graph.dir))=="/") graph.dir<- substr(graph.dir,1,nchar(graph.dir)-1)
-if ( (graph.dir!="./") & (lplot) &  !exists(graph.dir) ) {
+if (substr(graph.dir,nchar(graph.dir),nchar(graph.dir))=="/")
+   graph.dir<- substr(graph.dir,1,nchar(graph.dir)-1)
+if ( (graph.dir!="./") & (lplot) &  !file.exists(graph.dir) ) {
   print(paste("Create new directory:",graph.dir))
   dir.create( graph.dir )
 }
@@ -21,30 +21,32 @@ graph.dir<- paste(graph.dir,"/",sep="")
 slash <- instring("/",fielddata); slash <- slash[length(slash)]
 back.up.file <- paste("CCI_backup_",substr(fielddata,slash+1,nchar(fielddata)-4),".Rdata",sep="")
 
-print(paste("Back-up file:",back.up.file))
+if (verbose) print(paste("Input file:",fielddata," Back-up file:",back.up.file))
 
 writeLines("CCI is running",con=".CCI.run")
 
-print(paste("CYCLONES: region ",x.rng[1],"-",x.rng[2],"E/",y.rng[1],"-",y.rng[2],"N. res=",
-            dx,"x",dy,sep=""))
-#print("run stopCI() in the same running directory to stop the process")
-print(times); print(file.exists(fielddata)); print(fielddata)
-if (is.null(times) & (file.exists(fielddata))) {
-  print(paste("Checking",fielddata,"for updating..."))
+if (verbose) print(paste("CYCLONES: region ",x.rng[1],"-",x.rng[2],"E/",y.rng[1],"-",y.rng[2],
+            "N. res=", dx,"x",dy,sep=""))
+
+if (verbose) print("run stopCI() in the same running directory to stop the process")
+if (verbose) {print(times); print(file.exists(fielddata)); print(fielddata)}
+
+if (file.exists(fielddata)) {
+  if (verbose) print(paste("Checking",fielddata,"for updating..."))
   ncid <- open.ncdf(fielddata)
   nv <- ncid$nvars; 
   cdfvars <- rep("-",nv) 
   for (i in 1:nv) cdfvars[i] <- ncid$var[[i]]$name
-  print(cdfvars)
+  if (verbose) print(cdfvars)
   ipick <- grep(vname,cdfvars)
   #print(ipick)
   nd <- ncid$var[[ipick]]$ndims
   cdfdims <- rep("-",nd)
   for (i in 1:nd) cdfdims[i] <- ncid$var[[ipick]]$dim[[i]]$name
-  print("Dimensions:");print(cdfdims)  
+  if (verbose) print("Dimensions:");print(cdfdims)  
   itim <- grep("tim",lower.case(substr(cdfdims,1,3)))
   tim <- get.var.ncdf(ncid,cdfdims[itim])
-  print(range(tim))
+  if (verbose) print(range(tim))
   arv <- att.get.ncdf(ncid, cdfdims[itim], 'time_unit')
     if( arv$hasatt ) t.unit <- arv$value else {
        arv <- att.get.ncdf(ncid, cdfdims[itim], 'unit')
@@ -53,25 +55,42 @@ if (is.null(times) & (file.exists(fielddata))) {
          if( arv$hasatt ) t.unit <- arv$value else t.unit <- NULL
        } 
     }
-  print(paste("Time unit=",t.unit))
+  if (verbose) print(paste('time unit: ',t.unit))
+
+  test.tunit <- grep('since',t.unit)
+  if (length(test.tunit==0)) test.tunit <- c(0)
+  
+  if (test.tunit[1]==0) {
+    arv <- att.get.ncdf(ncid, cdfdims[itim], 'time_origin')
+      if( arv$hasatt ) t.org <-datestr2num(arv$value) else {
+         arv <- att.get.ncdf(ncid, cdfdims[itim], 'origin')
+         if( arv$hasatt ) t.org <- datestr2num(arv$value) else t.org <- c(1900,01,01)
+       }
+  } else {
+    pos <- instring('since',lower.case(t.unit))
+    t.org <- datestr2num(substr(t.unit,pos+6,pos+15))
+  }
+  if (verbose) print(paste("Time origin:  year=",t.org[1],'  month=', t.org[2],'  day=',t.org[3]))
+
   if (substr(lower.case(t.unit),1,4)=="hour") {
-    print("Dividing by 24 to get time units in days")
+    if (verbose) print("Dividing by 24 to get time units in days")
     tim <- tim/24
-    print(range(tim))
+    if (verbose) print(range(tim))
   }
   close.ncdf(ncid)
 # REB 25.01.2006  NT <- length(tim)
 # REB 25.01.2006    times <- seq(1,NT,by=tslice)
-  times <- tim
+  if (is.null(times)) times <- tim
 # REB 25.01.2006   if (max(times) < NT) times <- c(times,NT)
 # REB 25.01.2006   print("tim:"); print(NT); print(range(tim))
-}
+} else stop(paste('Could not find',fielddata))
+
 # REB 25.01.2006 NT <- max(times)
 NT <- length(times)
 times.physical <- times
-
+max.tim <- length(times.physical)
 if (is.null(label)) label <- paste(fielddata,": ",vname,sep="")
-print(paste("label=",label))
+if (verbose) print(paste("label=",label))
 lon <- matrix(rep(NA,NT*nsim),NT,nsim)
 lat <- matrix(rep(NA,NT*nsim),NT,nsim)
 tim <- matrix(rep(0,NT*nsim),NT,nsim)
@@ -93,12 +112,12 @@ if (cyclones) my.col <- rgb(c(c(seq(0.4,1,length=20),rep(1,21))),
 i.max <- 0; is0 <- 1
 plot.now <- TRUE
 if (file.exists(fname)) {
-  print(paste("Updating",fname))
+  if (verbose) print(paste("Updating",fname))
   load(fname)
   ii <- results$i
   if (length(ii) > NT) {
     NT <- length(ii)
-    print(paste("NT=",NT))
+    if (verbose) print(paste("NT=",NT))
     lon <- matrix(rep(NA,NT*nsim),NT,nsim)
     lat <- matrix(rep(NA,NT*nsim),NT,nsim)
     tim <- matrix(rep(0,NT*nsim),NT,nsim)
@@ -111,10 +130,10 @@ if (file.exists(fname)) {
     radius <- matrix(rep(NA,NT*nsim),NT,nsim)
   }
   
-  print(paste("length(ii)=",length(ii)," dim(lon)=",dim(lon)[1],"x",
+  if (verbose) print(paste("length(ii)=",length(ii)," dim(lon)=",dim(lon)[1],"x",
               dim(lon)[2]," dim(results$lon)=",dim(results$lon)[1],"x",dim(results$lon)[2]," NT=",NT))
-  print(summary(ii))
-  print(c(dim(lon[ii,]),NA,dim(results$lon)))
+  if (verbose) print(summary(ii))
+  if (verbose) print(c(dim(lon[ii,]),NA,dim(results$lon)))
   lon[ii,] <- results$lon[ii,]
   lat[ii,] <- results$lat[ii,]
   psl[ii,] <- results$psl[ii,]
@@ -122,42 +141,86 @@ if (file.exists(fname)) {
   yy[ii] <- results$yy[ii]
   mm[ii] <- results$mm[ii]
   dd[ii] <- results$dd[ii]
-  i.max <- max(results$i)
+  i.max <- max(results$i,na.rm=TRUE)
+  max.dpsl[ii,] <- results$max.dpsl[ii,]
+  max.speed[ii,] <- results$max.speed[ii,]
+  radius[ii,] <- results$radius[ii,]
+  
 # REB 25.01.2006  times <- c(i.max+1,times[times >= i.max])
   times <- c(max(tim[ii],na.rm=TRUE)+1,times[times >= max(tim[ii],na.rm=TRUE)])
-  print(paste("length(times)=",length(times)))
-  print(summary(times))
-  print(summary(tim[ii]))
+  if (verbose) print(paste("length(times)=",length(times)))
+  if (verbose) print(summary(times))
+  if (verbose) print(summary(tim[ii]))
    
-  Nx <- sum(times >= max(tim[ii],na.rm=TRUE))
+  Nx <- sum(times > max(tim[ii],na.rm=TRUE))
   if (Nx > 0) {
-    print("Detected a need for extending the matrices")
-    lon <- rbind(lon,matrix(rep(NA,Nx*nsim),Nx,nsim))
-    lat <- rbind(lat,matrix(rep(NA,Nx*nsim),Nx,nsim))
-    psl <- rbind(psl,matrix(rep(NA,Nx*nsim),Nx,nsim))
-    radius <- rbind(radius,matrix(rep(NA,Nx*nsim),Nx,nsim))
-    max.dpsl <- rbind(max.dpsl,matrix(rep(NA,Nx*nsim),Nx,nsim))
-    max.speed <- rbind(max.speed,matrix(rep(NA,Nx*nsim),Nx,nsim))
-    tim <- c(tim,rep(0,Nx)) 
-    yy <- c(yy,rep(NA,Nx))
-    mm <- c(mm,rep(NA,Nx))
-    dd <- c(dd,rep(NA,Nx))
-    print(paste("Extending the vectors by ",Nx," elements: dim(psl)= ",dim(psl)[1],", ",dim(psl)[2],sep=""))
+    if (verbose) print(paste("Detected a need for extending the matrices",
+                             "max(tim[ii])=",max(tim[ii],na.rm=TRUE),
+                             "max(times)=",max(times,na.rm=TRUE)) )
+    lon <- rbind(lon[ii,],matrix(rep(NA,Nx*nsim),Nx,nsim))
+    lat <- rbind(lat[ii,],matrix(rep(NA,Nx*nsim),Nx,nsim))
+    psl <- rbind(psl[ii,],matrix(rep(NA,Nx*nsim),Nx,nsim))
+    radius <- rbind(radius[ii,],matrix(rep(NA,Nx*nsim),Nx,nsim))
+    max.dpsl <- rbind(max.dpsl[ii,],matrix(rep(NA,Nx*nsim),Nx,nsim))
+    max.speed <- rbind(max.speed[ii,],matrix(rep(NA,Nx*nsim),Nx,nsim))
+    tim <- c(tim[ii],rep(0,Nx)) 
+    yy <- c(yy[ii],rep(NA,Nx))
+    mm <- c(mm[ii],rep(NA,Nx))
+    dd <- c(dd[ii],rep(NA,Nx))
+    if (verbose) print(paste("Extending the vectors by ",Nx," elements: dim(psl)= ",dim(psl)[1],", ",dim(psl)[2],sep=""))
   } 
 
-  print(paste("length(times)=",length(times)," min(times)=",min(times)," max(times)=",max(times),"times[1]=",
-               times[1]))
-  print(paste( "Time in file=",min(tim[ii],na.rm=TRUE),"-",
+  if (verbose) print(paste( "Time in file=",min(tim[ii],na.rm=TRUE),"-",
                max(tim,na.rm=TRUE)," i.max=",i.max," length(i)=",length(results$i),
                "length(tim[ii])=",length(tim[ii]),
                "min(tim[ii])=",min(tim[ii]),"max(tim[ii])=",max(tim[ii]),
                " extend by ",Nx))
+} else {
+  if (verbose) print(paste(fname,'does not exist...'))
+  tim <- c(0)
+  j.org <- julday(t.org[2],t.org[3],t.org[1])
+  dates <- caldat(tim + j.org)
+  yy <- dates$year
+  mm <- dates$month
+  dd <- dates$day
+  i.max <- 1
+  rm(dates)
 }
 
 ii <- i.max
-time.res <- round(mean(diff(dd),na.rm=TRUE),2)
-print(paste("Time resolution=",1/time.res," times a day: time.res=",time.res))
-print(summary(diff(dd)))
+if (length(times)>1) time.res <- round(mean(diff(times),na.rm=TRUE),4) else
+if (length(tim[1:ii])>1) time.res <- round(mean(diff(tim[1:ii]),na.rm=TRUE),4) else
+                       time.res <- NA
+if (max.tim==0) times.physical <- tim[1:ii]
+max.tim <- length(times.physical)
+
+if (!is.finite(1/time.res)) {
+  print("Problem with time information!")
+  if (length(times)>1) {
+    print("times:")
+    print(summary(times))
+    print(summary(diff(times)))
+  } else {
+    print("tim[ii]:")
+    print(summary(tim[1:ii]))
+    print(summary(diff(tim[1:ii])))
+  }     
+  stop("Error in CCI: 1/time.res is not a finite number")
+}
+if (time.res<0) {
+  print("Problem with time information!")
+  if (length(times)>1) {
+    print(summary(times))
+    print(summary(diff(times)))
+  } else {
+    print(summary(tim[1:ii]))
+    print(summary(diff(tim[1:ii])))
+  }  
+  stop("Error in CCI: time.res is negative!")
+}
+if (verbose) print(paste("Time resolution=",1/time.res," times a day: time.res=",time.res,
+                         "max.tim=",max.tim))
+if (verbose) print(summary(tim))
 
 # Main loop
 
@@ -165,19 +228,20 @@ print(summary(diff(dd)))
 #times <- times[seq(1,length(times),by=tslice)]
 #if (max(times) < max.tim) times <- c(times,max.tim)
 
-# Now, times represent the time index rather than the variable 'trim' (unit eg day/hour)
-max.tim <- length(times.physical)
+# Now, times represent the time index rather than the variable 'tim' (unit eg day/hour)
 i.here <- min(seq(1,max.tim,by=1)[times.physical > tim[ii]])
+
+if (verbose) print(paste("i.max=",i.max,"   i.here=",i.here,"  max.tim=",max.tim,"   tslice=",tslice))
+if (verbose) print(paste("length(times)=",length(times)," min(times)=",min(times)," max(times)=",max(times),"times[1]=",times[1]))
 
 if ((length(times)> 1) & is.finite(i.here)) {
 
-print(c(i.here,max.tim,tslice))
 times <- seq(i.here,max.tim,by=tslice)
 if (max(times) < max.tim) times <- c(times,max.tim)  # ensure to include the last time slice
-print(times)
+#print(times)
   
 for(is in 1:(length(times)-1)) {
-print(paste("is=",is,"times[is]=",times[is],"times[is+1]-1=",times[is+1]-1))
+if (verbose) print(paste("is=",is,"times[is]=",times[is],"times[is+1]-1=",times[is+1]-1))
 slp <- eval(parse(text=paste(nc.read.method,"(fielddata,vname,x.rng=x.rng,y.rng=y.rng,",
                   "t.rng=c(times[is],times[is+1]-1),force365.25=force365.25)",sep="")))
 nx <- length(slp$lon)
@@ -186,7 +250,7 @@ ny <- length(slp$lat)
 nt <- length(slp$tim)
 NT <- max(slp$tim) - min(tim)
 
-print(paste("nt=",nt," range(slp$tim)=",min(slp$tim),"-",max(slp$tim),"; max(tim)=",max(tim)))
+if (verbose) print(paste("nt=",nt," range(slp$tim)=",min(slp$tim),"-",max(slp$tim),"; max(tim)=",max(tim),"; NT=",NT))
 if (NT > nt) {
   Nx <- NT - nt
   lon <- rbind(lon,matrix(rep(NA,Nx*nsim),Nx,nsim))
@@ -200,12 +264,15 @@ if (NT > nt) {
   mm <- c(mm,rep(NA,Nx))
   dd <- c(dd,rep(NA,Nx))
   print(paste("Extending the vectors by ",Nx," elements: dim(psl)= ",dim(psl)[1],", ",dim(psl)[2],sep=""))
+} else {
+  if (verbose) print("### NT <= nt ###!")
+  if (verbose) print("Did not extend vectors")
 }
 
 #print(c(range(tim),NA,range(slp$tim)))
 
 jday <- julday(slp$mm,slp$dd,slp$yy)
-i.max <- seq(1,nt,by=1)[slp$tim > max(tim)][1]
+i.max <- seq(1,nt,by=1)[slp$tim > max(tim,na.rm=TRUE)][1]
 
 if (!is.null(dx) & !is.null(dy)) {
   Interpolate <- TRUE
@@ -221,8 +288,6 @@ nxx <- length(lonx)
 nyx <- length(latx)
 lon.xy <- rep(slp$lon,ny)
 lat.xy <- sort(rep(slp$lat,nx))
-lonXY <- rep(0.5*(lonx[2:nxx]+lonx[1:(nxx-1)]),nyx-1)
-latXY <- sort(rep(0.5*(latx[2:nyx]+latx[1:(nyx-1)]),nxx-1))
 
 mslp <- meanField(slp)
 if (Interpolate) {
@@ -230,7 +295,7 @@ if (Interpolate) {
   mslpmap <- interp(lon.xy,lat.xy,mslp$map,lonx,latx)$z
   print(dim(mslpmap))
 } else {
-  print("Mean values:")
+  if (verbose) print("Mean values:")
   mslpmap <- mslp$map
 }
 mslp$map[mslp$map > 1100] <- -9999
@@ -242,10 +307,11 @@ mslp$map[mslp$map > 1100] <- -9999
 #print(paste("TEST! sum(slp$tim > max(tim))>0",(sum(slp$tim > max(tim))>0)))
 #print(sum(is.na(mslp$map)))
 
-print("---")
-print(paste("i.max=",i.max," nt=",nt," ii=",ii))
+if (verbose) print("---")
+if (verbose) print(paste("i.max=",i.max," nt=",nt," ii=",ii,
+                         "  sum(slp$tim > max(tim,na.rm=TRUE))=",sum(slp$tim > max(tim,na.rm=TRUE))))
 
-if (sum(slp$tim > max(tim))>0) {
+if (sum(slp$tim > max(tim,na.rm=TRUE))>0) {
  for (it in i.max:nt) {
   ii <- ii+1
   if (mod(ii,plot.interval)==0) plot.now <- TRUE
@@ -259,12 +325,17 @@ if (sum(slp$tim > max(tim))>0) {
   resy <- dY(lonx,latx,slpmap,maxhar=maxhar)
 
   dslpdx <- resx$dZ
-  resx2 <- dX(lonx,latx,resx$dZ,maxhar=maxhar)
+  resx2 <- dX(resx$lon,latx,resx$dZ,maxhar=maxhar)
   dslpdx2 <- resx2$dZ
   dslpdy <- resy$dZ
-  resy2 <- dY(lonx,latx,resy$dZ,maxhar=maxhar)
+  resy2 <- dY(lonx,resy$lat,resy$dZ,maxhar=maxhar)
   dslpdy2 <- resy2$dZ
   wind <- dslpdx*0
+
+  NXX <- length(resx$lon); NYY <- length(resy$lat)
+  #print(c(nxx,nyx,NXX,NYY))
+  lonXY <- rep(0.5*(resx$lon[2:NXX]+resx$lon[1:(NXX-1)]),nyx-1)
+  latXY <- sort(rep(0.5*(resx$lat[2:NYY]+resx$lat[1:(NYY-1)]),nxx-1))
 
 # Masking out the borders to avoid spurious border effects:
 #  dslpdx[c(1,length(dslpdx))] <- NA
@@ -292,6 +363,8 @@ if (sum(slp$tim > max(tim))>0) {
   }
 
 
+  #x11(); image(dpslx,main="dpslx")
+  
   for (j in 1:(nyx-1)) {
     dx11 <- 0.5*(dslpdx[2:nxx,j]+dslpdx[2:nxx,j+1])
     dx12 <- 0.5*(dslpdx[1:(nxx-1),j]+dslpdx[1:(nxx-1),j+1])
@@ -309,8 +382,10 @@ if (sum(slp$tim > max(tim))>0) {
     if (sum(i.low)>0) P.lowx[i.low,j] <- 1
   }
 
-
-#  print("Low-pressure regions")
+  #print("Low-pressure regions")
+  #print(dim(P.lowy)); print(dim(P.lowx))
+  #x11(); image(P.lowy,main="P.lowy")
+  #x11(); image(P.lowx,main="P.lowx")
   lows <- (P.lowy & P.lowx)
   pcent <- 0.5*(px[lows]+py[lows])
   strength <- order(pcent)
@@ -328,6 +403,7 @@ if (sum(slp$tim > max(tim))>0) {
   
 # Remove secondary cyclones near a deeper one (same cyclonic system):
 
+  #print(paste("i.sim=",i.sim,"sum(lows)=",sum(lows)))
   del <- rep(FALSE,i.sim)  
   for (i in 1:(i.sim-1)) {
     d <- distAB(lon[ii,i],lat[ii,i],lon[ii,(i+1):i.sim],lat[ii,(i+1):i.sim])/1000
@@ -420,8 +496,8 @@ if (sum(slp$tim > max(tim))>0) {
   if (mod(ii,10)==0) save(file=fname,results)
   print(paste("ii=",ii,"it=",it,"yy=",slp$yy[it],"mm=",slp$mm[it],
               "dd=",slp$dd[it],"N.lows=",sum(i.sim),"PSL min=",round(psl[ii,1]),
-              "dPSL max",round(max.dpsl[ii,1],4),"max.speed",
-              round(max.speed[ii,1],1),"radius",round(radius[ii,1],1)))
+              "(hPa) dPSL max=",round(max.dpsl[ii,1],4),"max.speed=",
+              round(max.speed[ii,1],1),"(m/s) radius=",round(radius[ii,1],1)," (km)"))
 
 
 
@@ -510,6 +586,12 @@ if (sum(slp$tim > max(tim))>0) {
   }
  }
  i.max <- it
+} else {
+  if (verbose) print("### sum(slp$tim > max(tim,na.rm=TRUE)) <= 0 ### !!!")
+  print(paste("max(tim,na.rm=TRUE)=",max(tim,na.rm=TRUE),
+              " sum(slp$tim <= max(tim,na.rm=TRUE))=",sum(slp$tim <= max(tim,na.rm=TRUE))))
+  if (verbose) print(summary(slp$tim))
+  if (verbose) print(summary(tim))
 } # end of if (sum(slp$tim > max(tim))>0)
 } # end of is-loop
 
@@ -524,7 +606,13 @@ results <- list(lon=lon,lat=lat,tim=tim,psl=psl,
 save(file=fname,results)
 file.remove(back.up.file)
 
-} else { print("Skipping this netCDF file"); print(times) } # end of if - is.finite(times[is+1])
+} else {
+  print("Skipping this netCDF file")
+  print(paste('ii=',ii,'  length(times)=',length(times),'  max.tim=',max.tim,
+              '  sum(times.physical > tim[ii])=',sum(times.physical > tim[ii]),'tim[ii]=',tim[ii]))
+  
+  print(i.here)
+} # end of if - is.finite(times[is+1])
 
 }
 

@@ -8,9 +8,15 @@
 #
 # also see reg.cal.R
 
-dX <- function(lon,lat,Z,r=6.378e06,maxhar=NULL,mask.bad=TRUE,plot=FALSE,chk.conf=1) {
+dX <- function(lon,lat,Z,r=6.378e06,maxhar=NULL,mask.bad=TRUE,plot=FALSE,chk.conf=1,accuracy=NULL) {
+# REB: 08.02.2007: To improve accuracy/spatial resolution of the fit
+  if (is.null(accuracy)) accuracy <-  max(diff(lon))
+  LON <- seq(min(lon),max(lon),by=accuracy)
+  NX <- length(LON)
+
   ny <- length(lat)
   nx <- length(lon)
+  
   if (is.null(maxhar)) maxhar <- nx
   maxhar <- min(nx,maxhar)
   theta <- pi*lon/180
@@ -20,8 +26,11 @@ dX <- function(lon,lat,Z,r=6.378e06,maxhar=NULL,mask.bad=TRUE,plot=FALSE,chk.con
   a <- matrix(rep(0,ny*nx),ny,nx)
   b <- matrix(rep(0,ny*nx),ny,nx)
   c <- matrix(rep(0,ny*nx),ny,nx)
-  dZ <- matrix(rep(0,ny*nx),nx,ny)
-  Z.fit <- matrix(rep(0,ny*nx),nx,ny)
+#  dZ <- matrix(rep(0,ny*nx),nx,ny)
+#  Z.fit <- matrix(rep(0,ny*nx),nx,ny)
+# REB: 08.02.2007:
+  dZ <- matrix(rep(0,ny*NX),NX,ny)
+  Z.fit <- matrix(rep(0,ny*NX),NX,ny)
   dx <- rep(NA,ny); attr(dx,"units") <- "km"
   
   for (j in 1:ny) {
@@ -31,6 +40,7 @@ dX <- function(lon,lat,Z,r=6.378e06,maxhar=NULL,mask.bad=TRUE,plot=FALSE,chk.con
      good <- is.finite(y)
      if (sum(good)>10) {
       wt <- iw*W*seq(1,nx,by=1)
+      WT <- seq(min(wt),max(wt),by=accuracy)    # REB: 08.02.2007
       x1 <- cos(wt); x2 <- sin(wt)
       harmfit <- data.frame(y=y, x1=x1, x2=x2)
       harmonic <- lm(y ~ x1 + x2,data=harmfit)
@@ -43,9 +53,12 @@ dX <- function(lon,lat,Z,r=6.378e06,maxhar=NULL,mask.bad=TRUE,plot=FALSE,chk.con
          if (abs(stats$coefficients[4])*chk.conf > abs(stats$coefficients[1]))  c[j,iw] <- 0
          if (abs(stats$coefficients[5])*chk.conf > abs(stats$coefficients[2]))  a[j,iw] <- 0
          if (abs(stats$coefficients[6])*chk.conf > abs(stats$coefficients[3]))  b[j,iw] <- 0
-      } 
+      }
       Z.fit[,j] <- Z.fit[,j] + a[j,iw]*cos(wt) + b[j,iw]*sin(wt) + c[j,iw]
-      dZ[,j] <- dZ[,j] +iw*W*( -a[j,iw]*sin(wt) + b[j,iw]*cos(wt) ) 
+      dZ[,j] <- dZ[,j] +iw*W*( -a[j,iw]*sin(wt) + b[j,iw]*cos(wt) )
+# REB: 08.02.2007:
+#      Z.fit[,j] <- Z.fit[,j] + a[j,iw]*cos(WT) + b[j,iw]*sin(WT) + c[j,iw]
+#      dZ[,j] <- dZ[,j] +iw*W*( -a[j,iw]*sin(WT) + b[j,iw]*cos(WT) ) 
 
     }
    }
@@ -57,7 +70,7 @@ dX <- function(lon,lat,Z,r=6.378e06,maxhar=NULL,mask.bad=TRUE,plot=FALSE,chk.con
     dZ[mask] <- NA
     Z.fit[mask] <- NA
   }
-  results <- list(Z=Z,a=a,b=b,c=c,dZ=dZ,Z.fit=Z.fit,lon=lon,lat=lat,dx=dx,span=range(lon))
+  results <- list(Z=Z,a=a,b=b,c=c,dZ=dZ,Z.fit=Z.fit,lon=LON,lat=lat,dx=dx,span=range(lon))
   class(results) <- "map"
   attr(results,"long_name") <- "y-derivative"
   attr(results,"spatial units") <- "km"

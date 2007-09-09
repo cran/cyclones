@@ -1,7 +1,24 @@
+discard.bad <- function(results) {
+  #print(summary(results))
+  good <- is.finite(results$yy)
+  #print(length(good))
+  results$yy <-  results$yy[good]
+  results$mm <-  results$mm[good]
+  results$dd <-  results$dd[good]
+  results$tim <-  results$tim[good]
+  results$lon <-  results$lon[good,]
+  results$lat <-  results$lat[good,]
+  results$psl <-  results$psl[good,]
+  results$radius <-  results$radius[good,]
+  results$max.speed <-  results$max.speed[good,]
+  results$max.dpsl <-  results$max.dpsl[good,]
+  invisible(results)
+}
 
-cyclstat <- function(fname=NULL,psl0=1000,topo="data/etopo60.Rdata",cyclone=TRUE,
-                     x.rng=c(5,35),y.rng=c(55,72),cmp=FALSE,mon=c(12,1,2)) {
+cyclstat <- function(fname=NULL,psl0=1000,topo="etopo60.Rdata",cyclone=TRUE,
+                     x.rng=c(5,35),y.rng=c(55,72),cmp=FALSE,mon=c(12,1,2),ERA40=TRUE) {
 library(clim.pact)
+print(paste("Latest verion   ",topo))
 env <- environment()
   cmon <- c("Jan","Feb","Mar","Apr","May","Jun",
             "Jul","Aug","Sep","Oct","Nov","Dec")
@@ -9,13 +26,31 @@ env <- environment()
 if (is.null(fname)) cmp <- FALSE
 if (!is.null(fname)) {
   print("Using the given object")
-  if (class(fname)=="list") results <- fname
-  else if (is.character(fname)) load(fname) else stop('Cannot determine the object')
-  print(range(results$yy))
+  if (class(fname)=="list") {results <- fname; class(results) <- c("CCI.object"); print("list--->CCI.object")}
+  else if (class(fname)[1]=="CCI.object") {results <- fname}
+  else if (is.character(fname)) {
+    load(fname)
+    print(paste("loading",fname))
+    if (exists("results")){
+      if (class(results)=="list") class(results) <- "CCI.object" 
+    }
+ } else stop('Cannot determine the object')
+  print(range(results$yy,na.rm=TRUE))
 } else {
-  data(storms,envir = env)
-  results <- storms
+  if (ERA40) {
+    print("ERA40 cyclones")
+    data(Storms.ERA40,envir = env)
+    results <- Storms.ERA40
+  } else {
+    print("NMC cyclones")
+    data(Storms.NMC,envir = env)
+    results <- Storms.NMC
+  }
 }
+
+results <- discard.bad(results)
+
+results <- gradient.wind(results)
 
 subtit<-paste("region: ",x.rng[1],"E...",x.rng[2],"E / ",y.rng[1],"N...",y.rng[2],"N.",
               " Threshold= ",psl0,sep="")
@@ -40,7 +75,7 @@ if (dsh0[1] !=0) {
 if (cmp) {
   #print("Compare two results")
   result2 <- results
-  data(storms,envir = env); results <- storms
+  data(Storms.NMC,envir = env); results <- Storms.NMC
   nobs2 <- length(result2$yy)
   t.scal2 <- 365.25/nobs2
   print(range(results$yy))
@@ -81,13 +116,14 @@ nlon <- min(results$lon,na.rm=TRUE); xlon <- max(results$lon,na.rm=TRUE);
 nlat <- min(results$lat,na.rm=TRUE); xlat <- max(results$lat,na.rm=TRUE);
 #results$psl[,3:10] <- NA; results$lon[,3:10] <- NA; results$lat[,3:10]
 
-load(topo)
-lons <- top$ETOPO60X
+print(topo)
+if (file.exists(topo)) load(topo) else data(etopo60,envir=environment())
+lons <- etopo60$ETOPO60X
 lons[lons>180] <- lons[lons>180]-360
 srtx <- order(lons)
 lons <- lons[srtx]
-mask <- t(top$ROSE[,srtx])
-lats <- top$ETOPO60Y
+mask <- t(etopo60$ROSE[,srtx])
+lats <- etopo60$ETOPO60Y
 
 nx <- length(lons)
 ny <- length(lats)
@@ -128,6 +164,7 @@ my.col <- rgb(c(1,0.7),c(1,0.7),c(1,0.7))
 print(clons); print(clats)
 print(paste("Grid box size= ",2*dx,"x",2*dy))
 
+print(c(x.rng,y.rng))
 postscript(file = "cyclstat.eps",onefile=FALSE,horizontal=FALSE)
 par(las=1)
 image(lons,lats,mask,main="Cyclone count per year",lwd=2,
@@ -135,7 +172,7 @@ image(lons,lats,mask,main="Cyclone count per year",lwd=2,
       sub=paste("Period:",min(results$yy,na.rm=TRUE),"-",
       max(results$yy,na.rm=TRUE)," psl0=",psl0),col=my.col,levels=c(0,1))
 polygon(c(x.rng[1],rep(x.rng[2],2),rep(x.rng[1],2)),
-        c(rep(y.rng[1],2),rep(y.rng[2],2),y.rng[1]),edge="grey70",lty=2)
+        c(rep(y.rng[1],2),rep(y.rng[2],2),y.rng[1]),border="grey70",lty=2)
 contour(clons,clats,cfrq,lwd=2,add=TRUE)
 if (cmp) {
   #print("overlay contours from second data set...") 
@@ -145,6 +182,7 @@ grid()
 addland()
 while (dev.cur() > 1) dev.off()
 if (cmp) {
+  print("Compare")
   postscript(file = "cyclstat_1a.eps",onefile=FALSE,horizontal=FALSE)
 
   par(las=1,mfcol=c(1,2))
@@ -154,7 +192,7 @@ if (cmp) {
       sub=paste("Period:",min(results$yy,na.rm=TRUE),"-",
       max(results$yy,na.rm=TRUE)," psl0=",psl0),col=my.col,levels=c(0,1))
   polygon(c(x.rng[1],rep(x.rng[2],2),rep(x.rng[1],2)),
-        c(rep(y.rng[1],2),rep(y.rng[2],2),y.rng[1]),edge="grey70",lty=2)
+        c(rep(y.rng[1],2),rep(y.rng[2],2),y.rng[1]),border="grey70",lty=2)
   contour(clons,clats,cfrq,lwd=2,add=TRUE,levels=levels)
   grid()
   addland()
@@ -164,7 +202,7 @@ if (cmp) {
       sub=paste("Period:",min(results$yy,na.rm=TRUE),"-",
       max(results$yy,na.rm=TRUE)," psl0=",psl0),col=my.col,levels=c(0,1))
   polygon(c(x.rng[1],rep(x.rng[2],2),rep(x.rng[1],2)),
-        c(rep(y.rng[1],2),rep(y.rng[2],2),y.rng[1]),edge="grey70",lty=2)
+        c(rep(y.rng[1],2),rep(y.rng[2],2),y.rng[1]),border="grey70",lty=2)
   contour(clons,clats,cfrq-cfrq2,lwd=2,add=TRUE,levels=levels)
   grid()
   addland()
@@ -181,11 +219,13 @@ ncmm <- rep(0,12); scmm <- rep(0,12)
 yymm <- sort(rep(years,12)) + (rep(1:12,nyrs)-0.5)/12
 ncyymm2 <- ncyymm; ncmm2 <- ncmm; scmm2 <- scmm
 
-print(t.scal)
+print("t.scal & summaries( mm yy ):")
+print(t.scal); print(summary(results$mm));   print(summary(results$yy))
 
 for (iy in 1:nyrs) {
   for (im in 1:12) {
-    immyy <- (results$mm==im) & (results$yy==years[iy]) 
+    immyy <- (results$mm==im) & (results$yy==years[iy])
+#    print(c(iy,im)); print(table(immyy))
     lon <- results$lon[immyy]
     lat <- results$lat[immyy]
     psl <- results$psl[immyy]
@@ -196,7 +236,7 @@ for (iy in 1:nyrs) {
                                      (lat >= y.rng[1]) & (lat <= y.rng[2]) &
                                      (psl > psl0),na.rm=TRUE )
     imiy <- (iy-1)*12+im
-    if (sum(immyy)>0) ncyymm[imiy] <- icyclone
+    if (sum(immyy,na.rm=TRUE)>0) ncyymm[imiy] <- icyclone
     ncmm[im]<-ncmm[im]+icyclone
     if (cmp) {
       immyy <- (result2$mm==im) & (result2$yy==years[iy]) 
@@ -210,20 +250,23 @@ for (iy in 1:nyrs) {
                                        (lat >= y.rng[1]) & (lat <= y.rng[2]) &
                                        (psl > psl0),na.rm=TRUE )
       imiy <- (iy-1)*12+im
-      if (sum(immyy)>0) ncyymm2[imiy] <- icyclone
+      if (sum(immyy,na.rm=TRUE)>0) ncyymm2[imiy] <- icyclone
       ncmm2[im]<-ncmm2[im]+icyclone
     }
-    if (sum(is.finite(ncyymm))>0) {
+  }
+}
+
+if (sum(is.finite(ncyymm))>0) {
+      print("plot(yymm+0.03,as.vector(ncyymm),...")
+      print(summary(yymm)); print(summary(c(ncyymm)))
+      x11()
       plot(yymm+0.03,as.vector(ncyymm),type="s",xlab="time",
            ylab="count/month",lwd=2,
            main=paste("Cyclone count",
            results$yy[1],"-",max(results$yy,na.rm=TRUE)))
       lines(yymm,as.vector(ncyymm),type="s",lwd=2)
       lines(yymm,as.vector(ncyymm2),type="s",lwd=1,col="grey40")
-     }
-  }
 }
-
 
 nt <- length(ncyymm); ind <- 1:nt
 ift <- ind[!is.na(ncyymm)][1]-1; itf <- reverse(ind[!is.na(ncyymm)])[1]

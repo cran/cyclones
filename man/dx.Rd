@@ -40,8 +40,8 @@ is recommended to use the minimum value for maxhar.
 }
 
 \usage{
-dX(lon,lat,Z,r=6.378e06,maxhar=NULL,mask.bad=TRUE,plot=FALSE,chk.conf=1)
-dY(lon,lat,Z,r=6.378e06,maxhar=NULL,mask.bad=TRUE,plot=FALSE,chk.conf=1)
+dX(lon,lat,Z,r=6.378e06,maxhar=NULL,mask.bad=TRUE,plot=FALSE,chk.conf=1,accuracy=NULL)
+dY(lon,lat,Z,r=6.378e06,maxhar=NULL,mask.bad=TRUE,plot=FALSE,chk.conf=1,accuracy=NULL)
 dT(y,maxhar=NULL,plot=FALSE,chk.conf=1)
 test.dX(field=NULL,maxhar=7)
 test.dY(field=NULL,maxhar=5)
@@ -58,7 +58,8 @@ test.dT(y=NULL,maxhar=15)
     \item{plot}{plot data and fit}
     \item{field}{Field to which the test is applied (default: DNMI.slp)}
     \item{chk.conf}{If not NULL, test whether conf. int. (+- chk.conf * sd) includes zero - if
-                    so, set coefficient to zero.}
+      so, set coefficient to zero.}
+    \item{accuracy}{To set the accuracy in determining the zero-crossing (unit: degrees N or E)}.
   }
 \value{A list: list(Z=Z,a=a,b=b,c=c,dZ=dZ,Z.fit=Z.fit,lon=lon,lat=lat)
 of class "map"}

@@ -8,19 +8,30 @@ Identifies cyclones (low pressure systems) in a gridded data set using a Calculu
 
 This code is the basis for the analysis carried out by Benestad et al. 'The use of a Calculus-based Cyclone Identification method for generating storm statistics' submitted to Climate Dynamics (2004).
 
+If a north-south or east-west psl (sea level pressure) profile can be approximated as \deqn{p(\theta) = p_0 + \sum_{i=1}^{N_\theta} [ a_\theta(i) \cos(\omega_\theta(i) \theta) + b_\theta(i) \sin(\omega_\theta(i) \theta) ]}{p = p0 + sum [ a cos(w t) + b sin(w t) ]} 
+
+Then the psl gradient can be estimated as: \deqn{\frac{\partial \hat{p}(\theta)}{\partial \theta} = \sum_{i=1}^{N_\theta} \omega_\theta(i)[ -\hat{a}_\theta(i) \sin(\omega_\theta(i) \theta) + \hat{b}_\theta(i) \cos(\omega_\theta(i) \theta)]}{dp/dt = sum (w[ -a sin(w t) + b cos(w w)])}
+
+The gradient in x and y directions are found after the transform
+\deqn{\frac{d\hat{p}(x)}{dx} = \frac{1}{a \cos(\phi)} \frac{d\hat{p}(\theta)}{d\theta}}{dp/dx= 1/[a cos(t)] dp(t)/dt} and \deqn{\frac{d\hat{p}(y)}{dy} = \frac{1}{a} \frac{d\hat{p}(\phi)}{d\phi}}{dp/dy = 1/a dp/dt} (Gill, 1982).
+
+
+
 \code{stopCCI} signals the CCI process to stop in a safe manner by
 removing the file '.CCI.run' in the run directory.
 
 \code{gradient.wind} estimated the gradient wind of the data produced by
 CCI after Fleagle and Businger (1980) p. 163. (eq 4.27). 
 
+Reference: Benestad \& Chen (2006) 'The use of a Calculus-based Cyclone Identification method for generating storm statistics', Tellus A, in press.
+           Benestad (2005) 
 } 
 \usage{
 CCI(maxhar=14,lplot=TRUE,nsim=10,fname="data/cyclones.Rdata",
     fielddata="data/nmc_slp.nc",vname="slp",cyclones=TRUE,force365.25=FALSE,
     x.rng=c(-80,40),y.rng=c(5,75),tslice=3652,rad=5,dx=1,dy=1,
     times=NULL,label=NULL,rho=1.293,nc.read.method="retrieve.nc",
-    graph.dir="CCI.graphs/",plot.interval=50,EPS=TRUE)
+    graph.dir="CCI.graphs/",plot.interval=50,EPS=TRUE,verbose=TRUE,accuracy=NULL)
 stopCCI()
 gradient.wind(storms=NULL,icyclone=1)
 }
@@ -46,7 +57,8 @@ gradient.wind(storms=NULL,icyclone=1)
       data. Can be set to a custom made routine.THe output should be a
       'field'-type object.}
     \item{graph.dir}{Name of the directory in which to store the
-      graphical output.}
+      graphical output. Useful for checking the results, e.g. using
+      \code{animate -delay 50 -pause 5 cci*.eps} under Linux.}
     \item{plot.interval}{Interval between the generation of each
       graphical output}
     \item{EPS}{TRUE for generation of encapsulated PostScript graphics, FALSE for PNG
@@ -55,6 +67,8 @@ gradient.wind(storms=NULL,icyclone=1)
     \item{storms}{Data object returned by CCI with cyclone statistics.}
     \item{icyclone}{Decides which cyclone to do the gradient wind estimate for (eg 1 is for the deepest
       cyclone, 2 for the second deepest, etc).}
+    \item{verbose}{Print out diagnostics.}
+    \item{accuracy}{Not yet finished.}
   }
 \value{
 A list: \code{list(lon=lon, lat, tim, psl, yy, mm, dd, i, label,
