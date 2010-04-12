@@ -1,14 +1,14 @@
-\name{within}
-\alias{within}
-\alias{testWithin}
+\name{withIn}
+\alias{withIn}
+\alias{testWithIn}
 \title{Points within an area.}
 \description{
 Finds points within a given closed 2-D boundary.
 }
 
 \usage{
-within(x,y,X,Y,test=FALSE,plot=FALSE)
-testWithin(a=3,b=5)
+withIn(x,y,X,Y,test=FALSE,plot=FALSE)
+testWithIn(a=3,b=5)
 }
 \arguments{
     \item{x}{vector with x-cordinates to test if they lie inside given boundary.}
@@ -27,7 +27,7 @@ x <- rnorm(100)
 y <- rnorm(100)
 X <- cos(2*pi*seq(0,1,length=360))
 Y <- cos(2*pi*seq(0,1,length=360))
-print(sum(within(x,y,X,Y)))
+print(sum(withIn(x,y,X,Y)))
 }
 \keyword{manip}
 

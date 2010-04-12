@@ -34,7 +34,7 @@ discard.bad(results)
       NMC as reference.}
     \item{results}{CCI-object.}
   }
-\value{}
+\value{Figures saved in EPS-format: cyclstat.eps, cyclstat2.eps, cyclstat3.eps, and cyclstat4.eps}
 \author{R.E. Benestad}
 \examples{
 \dontrun{

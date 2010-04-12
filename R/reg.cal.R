@@ -74,7 +74,7 @@ coefInt <- function(y,c1=0) {
 }
 
 geoGrad <- function(maxhar=35,fname="data/etopo5_scandinavia.Rdata",x.rng=c(-10,35),y.rng=c(50,73),plot=FALSE) {
-  library(clim.pact)
+  require(clim.pact)
   if (file.exists(fname)) load(fname) else {
      print("Try:")
      print("URL: http://www.unidata.ucar.edu/cgi-bin/dods/datasets/datasets.cgi?keyword=etopo5&xmlfilename=datasets.xml")
@@ -140,10 +140,10 @@ geoGrad <- function(maxhar=35,fname="data/etopo5_scandinavia.Rdata",x.rng=c(-10,
        slope,direction,ETOPO5X,ETOPO5Y)
 }
 
-testReg.cal <- function(i.y=240,N=50) {
+testReg.cal <- function(i.y=240,n=50) {
   load("data/etopo5_scandinavia.Rdata")
   y <- ROSE[i.y,]
-  a <- coefFit(y,n=N)
+  a <- coefFit(y,n=n)
   da <- coefDeriv(a)
   a.2 <- coefInt(da,c1=a$coefs[1])
 #  print(a$coefs)

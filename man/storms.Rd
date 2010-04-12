@@ -22,5 +22,8 @@
 \source{The Norwegian Meteorological Institute, Climatology division.}
 \references{EMS04-A-00146, Benestad, R.E.; Sorteberg, A.; Chen, D. 'Storm statistics derived using a calculus-based cyclone identification method', \url{http://www.cosis.net/members/meetings/sessions/oral_programme.php?p_id=110&s_id=1845}, European Meteorological Society AC2, Nice, Sept 28, 2004.}
 \examples{
+data(Storms.NMC)
+summary(Storms.NMC)
+cyclstat(Storms.NMC)
 }
 \keyword{datasets}

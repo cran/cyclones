@@ -1,5 +1,5 @@
 
-within <- function(x,y,X,Y,test=FALSE,plot=FALSE) {
+withIn <- function(x,y,X,Y,test=FALSE,plot=FALSE) {
 
   center.X <- mean(X,na.rm =TRUE)
   center.Y <- mean(Y,na.rm =TRUE)
@@ -29,7 +29,7 @@ within <- function(x,y,X,Y,test=FALSE,plot=FALSE) {
 
 
 
-testWithin <- function(a=3,b=5) {
+testWithIn <- function(a=3,b=5) {
   x <- seq(-a,a,length=1000)
   y <- b*sqrt(1 - (x/a)^2)
   plot(c(x,-x),c(-y,y),type="l",xlim=c(-a-b,a+b),ylim=c(-a-b,a+b),

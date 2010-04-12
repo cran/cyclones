@@ -1,7 +1,7 @@
 
 windstat <- function(fname=NULL,ws0=20,topo="etopo60.Rdata",cyclone=TRUE,
                      x.rng=c(5,35),y.rng=c(55,72),cmp=FALSE,mon=c(12,1,2),ERA40=TRUE) {
-library(clim.pact)
+require(clim.pact)
 print(paste("Latest verion   ",topo))
 env <- environment()
   cmon <- c("Jan","Feb","Mar","Apr","May","Jun",
@@ -99,12 +99,12 @@ nlat <- min(results$lat,na.rm=TRUE); xlat <- max(results$lat,na.rm=TRUE);
 
 print(topo)
 if (file.exists(topo)) load(topo) else data(etopo60,envir=environment())
-lons <- etopo60$ETOPO60X
+lons <- etopo60[[1]]
 lons[lons>180] <- lons[lons>180]-360
 srtx <- order(lons)
 lons <- lons[srtx]
-mask <- t(etopo60$ROSE[,srtx])
-lats <- etopo60$ETOPO60Y
+mask <- etopo60[[3]][srtx,]
+lats <- etopo60[[2]]
 
 nx <- length(lons)
 ny <- length(lats)

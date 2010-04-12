@@ -5,6 +5,8 @@ dX                      First derivatives from harmonic fits.
 etopo60                 Topography with 60-minute resolution. This is a
                         low-resolution version of the more recent
                         2-minute topography: ETOPO5
+FrontStats              Ocean currents and sea surface temperature
+                        fronts
 ma.filt                 Various filters.
 Storms.ERA40            North Atlantic cyclone statistics.
 within                  Points within an area.

@@ -1,6 +1,6 @@
-library(clim.pact)
 
 test.dX <- function(field=NULL,maxhar=7) {
+  require(clim.pact)
   if (is.null(field)) data(DNMI.slp,envir=environment()) else {
                       DNMI.slp <- field; rm(field) }
   

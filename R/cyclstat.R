@@ -17,7 +17,7 @@ discard.bad <- function(results) {
 
 cyclstat <- function(fname=NULL,psl0=1000,topo="etopo60.Rdata",cyclone=TRUE,
                      x.rng=c(5,35),y.rng=c(55,72),cmp=FALSE,mon=c(12,1,2),ERA40=TRUE) {
-library(clim.pact)
+require(clim.pact)
 print(paste("Latest verion   ",topo))
 env <- environment()
   cmon <- c("Jan","Feb","Mar","Apr","May","Jun",
@@ -116,14 +116,24 @@ nlon <- min(results$lon,na.rm=TRUE); xlon <- max(results$lon,na.rm=TRUE);
 nlat <- min(results$lat,na.rm=TRUE); xlat <- max(results$lat,na.rm=TRUE);
 #results$psl[,3:10] <- NA; results$lon[,3:10] <- NA; results$lat[,3:10]
 
-print(topo)
-if (file.exists(topo)) load(topo) else data(etopo60,envir=environment())
-lons <- etopo60$ETOPO60X
+if (file.exists(topo)) {
+  print(paste("using",topo))
+  load(topo)
+} else {
+  print(paste(topo,"from 'data(etopo60,envir=environment())'"))
+  data(etopo60,envir=environment())
+  print(summary(etopo60))
+  print(dim(etopo60[[3]]))
+} 
+#lons <- etopo60$x
+lons <- etopo60[[1]]
+
 lons[lons>180] <- lons[lons>180]-360
 srtx <- order(lons)
 lons <- lons[srtx]
-mask <- t(etopo60$ROSE[,srtx])
-lats <- etopo60$ETOPO60Y
+d <- dim(etopo60[[3]])
+mask <- etopo60[[3]][srtx,]
+lats <- etopo60[[2]]
 
 nx <- length(lons)
 ny <- length(lats)
@@ -142,23 +152,37 @@ lats <- lats[iy]
 mask <- mask[ix,iy]
 
 nx <- 15; ny=15
-clons <- seq(nlon,xlon,length=nx)
-clats <- seq(nlat,xlat,length=ny)
-dx <- 0.5*(clons[2]-clons[1])
-dy <- 0.5*(clats[2]-clats[1])
+#clons <- seq(nlon,xlon,length=nx)
+#clats <- seq(nlat,xlat,length=ny)
+#dx <- 0.5*(clons[2]-clons[1])
+#dy <- 0.5*(clats[2]-clats[1])
+dx <- 5
+dy <- 5
 
 print("Mapping cyclone counts")
 cfrq <- matrix(rep(0,nx*ny),nx,ny)
-if (cmp) cfrq2 <- matrix(rep(0,nx*ny),nx,ny)
-for (j in 1:ny) {
-  for (i in 1:nx) {
-    cfrq[i,j] <- t.scal*sum( (results$lon >= clons[i]-dx) & (results$lon < clons[i]+dx) &
-                             (results$lat >= clats[j]-dy) & (results$lat < clats[j]+dy) &
-                             (results$psl < psl0),na.rm=TRUE )
-    if (cmp) cfrq2[i,j] <- t.scal2*sum( (result2$lon >= clons[i]-dx) & (result2$lon < clons[i]+dx) &
-                                        (result2$lat >= clats[j]-dy) & (result2$lat < clats[j]+dy) &
-                                        (result2$psl < psl0),na.rm=TRUE )
-  }
+# Old and slow....
+#if (cmp) cfrq2 <- matrix(rep(0,nx*ny),nx,ny)
+#for (j in 1:ny) {
+#  for (i in 1:nx) {
+#    cfrq[i,j] <- t.scal*sum( (results$lon >= clons[i]-dx) & (results$lon < clons[i]+dx) &
+#                             (results$lat >= clats[j]-dy) & (results$lat < clats[j]+dy) &
+#                             (results$psl < psl0),na.rm=TRUE )
+#    if (cmp) cfrq2[i,j] <- t.scal2*sum( (result2$lon >= clons[i]-dx) & (result2$lon < clons[i]+dx) &
+#                                        (result2$lat >= clats[j]-dy) & (result2$lat < clats[j]+dy) &
+#                                        (result2$psl < psl0),na.rm=TRUE )
+#  }
+#}
+# New and fast REB 20.11.2008
+ibelow <- results$psl < psl0
+tab <- table(dx*round(results$lon[ibelow]/dx),round(dy*results$lat[ibelow]/dy))
+cfrq <- t.scal*as.numeric(tab)
+clons <- as.numeric(rownames(tab))
+clats <- as.numeric(colnames(tab))
+dim(cfrq) <- c(length(clons),length(clats))
+if (cmp) {
+  ibelow <- results2$psl < psl0
+  cfrq2[i,j] <- t.scal*as.numeric(table(dx*round(results2$lon[ibelow]/dx),round(dy*results2$lat[ibelow]/dy)))
 }
 my.col <- rgb(c(1,0.7),c(1,0.7),c(1,0.7))
 print(clons); print(clats)

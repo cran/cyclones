@@ -1,7 +1,9 @@
 gradient.wind <- function(storms=NULL,icyclone=1) {
 # Gradient wind: Fleagle and Businger (1980) p. 163. (eq 4.27):
   # print(class(storms))
-  if (is.null(storms)) {data(Storms.ERA40,envir =environment()); storms <- Storms.ERA40; rm(Storms.ERA40)} else
+  if (is.null(storms)) {data(Storms.ERA40,envir =environment())
+                        storms <- Storms.ERA40;
+                        rm(Storms.ERA40); gc(reset=TRUE)} else
                         if (class(storms)[1]=="CCI.object") {print("Use given object")} else
                         if (class(storms)[1]=="character") {
                          if (file.exists(storms)) load(storms) else

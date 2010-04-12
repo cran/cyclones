@@ -80,7 +80,7 @@ degrees), \code{psl} (local minimum pressure: units hPa),
 (radius of the storm: units km) are
 \code{[1:nt,1:i.sim]}-matrices. \code{v.grad} is the estimated gradient wind.
 }
-\author{R.E. Benestad}}
+\author{R.E. Benestad}
 \examples{
 \dontrun{
 # Shell script for running in batch (background proccess)

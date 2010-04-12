@@ -24,9 +24,9 @@ gauss.filt <- function(x,n) {
 # Binomial filter
 binom.filt <- function(x,n) {
   win <- choose(n-1,0:(n-1))
-  win <- win/max(win,na.rm=T)
+  win <- win/max(win,na.rm=TRUE)
   win[is.na(win)] <- 1
-  win <- win/sum(win,na.rm=T)
+  win <- win/sum(win,na.rm=TRUE)
   y <- filter(x,win)
   y
 }

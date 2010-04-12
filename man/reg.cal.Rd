@@ -47,7 +47,7 @@ coefDeriv(y)
 coefInt(y,c1=0)
 geoGrad(maxhar = 35, fname = "data/etopo5_scandinavia.Rdata",
         x.rng = c(-10, 35), y.rng = c(50, 73), plot = FALSE)
-testReg.cal(i.y=240,N=50)
+testReg.cal(i.y=240,n=50)
 derivFFT(y)
 integrFFT(y)
 testFFTcalc()
@@ -59,14 +59,16 @@ testFFTcalc()
     \item{method}{Regression model for fitting the harmonics}
     \item{c1}{first coefficient: the constant term}
     \item{maxhar}{number of harmonix (see \code{\link{dX}})}
-    \item{i.y}{}
-    \item{N}{}
+    \item{i.y}{index for selecting latitude for testing.}
     \item{x.rng}{longitude range}
     \item{y.rng}{latitude range}
     \item{fname}{Name of topology file}
     \item{plot}{Plot the results}
   }
-\value{}
+\value{Various results. E.g. derivFFT and integrFFT
+  return vectors with class 'complex'; geoGrad lists a list containing
+  information used for gridding; coefFit returns a list containing best
+  fit ('y.hat') as well as some statistics.}
 \author{R.E. Benestad}
 \examples{
 \dontrun{
@@ -93,8 +95,8 @@ x <- seq(-3,3,length=100)
 y <- 3*cos(5*x) + 0.3*sin(18*x) - 1.4*sin(3*x) + 0.15*sin(23*x)
 plot(x,y,type="l",lwd=3)
 grid()
-dydx <- deriv.fft(y)
-y2 <- integr.fft(dydx)
+dydx <- derivFFT(y)
+y2 <- integrFFT(dydx)
 lines(x,y2,col="red",lty=2,lwd=2)
 grid()
 newFig()

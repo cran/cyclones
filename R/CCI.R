@@ -1,5 +1,4 @@
 # R.E. Benestad, 26.06.2003
-library(ncdf)
 
 CCI <- function(maxhar=14,lplot=TRUE,nsim=10,fname="data/cyclones.Rdata",
                 fielddata="data/nmc_slp.nc",vname="slp",cyclones=TRUE,force365.25=FALSE,
@@ -7,8 +6,9 @@ CCI <- function(maxhar=14,lplot=TRUE,nsim=10,fname="data/cyclones.Rdata",
                 times=NULL,label=NULL,rho=1.293,nc.read.method="retrieve.nc",
                 graph.dir="CCI.graphs/",plot.interval=50,EPS=TRUE,verbose=TRUE,accuracy=NULL) {
 
-library(clim.pact)
-library(akima)
+require(ncdf)
+require(clim.pact)
+require(akima)
 
 if (substr(graph.dir,nchar(graph.dir),nchar(graph.dir))=="/")
    graph.dir<- substr(graph.dir,1,nchar(graph.dir)-1)
@@ -28,7 +28,7 @@ writeLines("CCI is running",con=".CCI.run")
 if (verbose) print(paste("CYCLONES: region ",x.rng[1],"-",x.rng[2],"E/",y.rng[1],"-",y.rng[2],
             "N. res=", dx,"x",dy,sep=""))
 
-if (verbose) print("run stopCI() in the same running directory to stop the process")
+if (verbose) print("run stopCCI() in the same running directory to stop the process")
 if (verbose) {print(times); print(file.exists(fielddata)); print(fielddata)}
 
 if (file.exists(fielddata)) {
@@ -58,7 +58,7 @@ if (file.exists(fielddata)) {
   if (verbose) print(paste('time unit: ',t.unit))
 
   test.tunit <- grep('since',t.unit)
-  if (length(test.tunit==0)) test.tunit <- c(0)
+  if (length(test.tunit)==0) test.tunit <- c(0)
   
   if (test.tunit[1]==0) {
     arv <- att.get.ncdf(ncid, cdfdims[itim], 'time_origin')
@@ -86,21 +86,21 @@ if (file.exists(fielddata)) {
 } else stop(paste('Could not find',fielddata))
 
 # REB 25.01.2006 NT <- max(times)
-NT <- length(times)
+NT <- length(times)+1
 times.physical <- times
 max.tim <- length(times.physical)
 if (is.null(label)) label <- paste(fielddata,": ",vname,sep="")
 if (verbose) print(paste("label=",label))
-lon <- matrix(rep(NA,NT*nsim),NT,nsim)
-lat <- matrix(rep(NA,NT*nsim),NT,nsim)
-tim <- matrix(rep(0,NT*nsim),NT,nsim)
-yy <- matrix(rep(NA,NT*nsim),NT,nsim)
-mm <- matrix(rep(NA,NT*nsim),NT,nsim)
-dd <- matrix(rep(NA,NT*nsim),NT,nsim)
-psl <- matrix(rep(NA,NT*nsim),NT,nsim)
-max.dpsl <- matrix(rep(NA,NT*nsim),NT,nsim)
+lon <-       matrix(rep(NA,NT*nsim),NT,nsim)
+lat <-       matrix(rep(NA,NT*nsim),NT,nsim)
+tim <-       matrix(rep(0,NT*nsim),NT,nsim)
+yy <-        matrix(rep(NA,NT*nsim),NT,nsim)
+mm <-        matrix(rep(NA,NT*nsim),NT,nsim)
+dd <-        matrix(rep(NA,NT*nsim),NT,nsim)
+psl <-       matrix(rep(NA,NT*nsim),NT,nsim)
+max.dpsl <-  matrix(rep(NA,NT*nsim),NT,nsim)
 max.speed <- matrix(rep(NA,NT*nsim),NT,nsim)
-radius <- matrix(rep(NA,NT*nsim),NT,nsim)
+radius <-    matrix(rep(NA,NT*nsim),NT,nsim)
 
 if (cyclones) my.col <- rgb(c(c(seq(0.4,1,length=20),rep(1,21))),
                             c(c(seq(0.4,1,length=20),rep(1,21))),
@@ -118,16 +118,16 @@ if (file.exists(fname)) {
   if (length(ii) > NT) {
     NT <- length(ii)
     if (verbose) print(paste("NT=",NT))
-    lon <- matrix(rep(NA,NT*nsim),NT,nsim)
-    lat <- matrix(rep(NA,NT*nsim),NT,nsim)
-    tim <- matrix(rep(0,NT*nsim),NT,nsim)
-    yy <- matrix(rep(NA,NT*nsim),NT,nsim)
-    mm <- matrix(rep(NA,NT*nsim),NT,nsim)
-    dd <- matrix(rep(NA,NT*nsim),NT,nsim)
-    psl <- matrix(rep(NA,NT*nsim),NT,nsim)
-    max.dpsl <- matrix(rep(NA,NT*nsim),NT,nsim)
+    lon <-       matrix(rep(NA,NT*nsim),NT,nsim)
+    lat <-       matrix(rep(NA,NT*nsim),NT,nsim)
+    tim <-       matrix(rep(0,NT*nsim),NT,nsim)
+    yy <-        matrix(rep(NA,NT*nsim),NT,nsim)
+    mm <-        matrix(rep(NA,NT*nsim),NT,nsim)
+    dd <-        matrix(rep(NA,NT*nsim),NT,nsim)
+    psl <-       matrix(rep(NA,NT*nsim),NT,nsim)
+    max.dpsl <-  matrix(rep(NA,NT*nsim),NT,nsim)
     max.speed <- matrix(rep(NA,NT*nsim),NT,nsim)
-    radius <- matrix(rep(NA,NT*nsim),NT,nsim)
+    radius <-    matrix(rep(NA,NT*nsim),NT,nsim)
   }
   
   if (verbose) print(paste("length(ii)=",length(ii)," dim(lon)=",dim(lon)[1],"x",
@@ -184,7 +184,7 @@ if (file.exists(fname)) {
   mm <- dates$month
   dd <- dates$day
   i.max <- 1
-  rm(dates)
+  rm(dates); gc(reset=TRUE)
 }
 
 ii <- i.max
@@ -248,15 +248,15 @@ nx <- length(slp$lon)
 dlon <- slp$lon[2] - slp$lon[1]
 ny <- length(slp$lat)
 nt <- length(slp$tim)
-NT <- max(slp$tim) - min(tim)
+NT <- max(slp$tim) - min(tim)+1
 
 if (verbose) print(paste("nt=",nt," range(slp$tim)=",min(slp$tim),"-",max(slp$tim),"; max(tim)=",max(tim),"; NT=",NT))
-if (NT > nt) {
+if ( (NT > nt) & (file.exists(fname)) ) {
   Nx <- NT - nt
-  lon <- rbind(lon,matrix(rep(NA,Nx*nsim),Nx,nsim))
-  lat <- rbind(lat,matrix(rep(NA,Nx*nsim),Nx,nsim))
-  psl <- rbind(psl,matrix(rep(NA,Nx*nsim),Nx,nsim))
-  radius <- rbind(radius,matrix(rep(NA,Nx*nsim),Nx,nsim))
+  lon <-      rbind(lon,matrix(rep(NA,Nx*nsim),Nx,nsim))
+  lat <-      rbind(lat,matrix(rep(NA,Nx*nsim),Nx,nsim))
+  psl <-      rbind(psl,matrix(rep(NA,Nx*nsim),Nx,nsim))
+  radius <-   rbind(radius,matrix(rep(NA,Nx*nsim),Nx,nsim))
   max.dpsl <- rbind(max.dpsl,matrix(rep(NA,Nx*nsim),Nx,nsim))
   max.speed <- rbind(max.speed,matrix(rep(NA,Nx*nsim),Nx,nsim))
   tim <- c(tim,rep(0,Nx)) 
@@ -264,7 +264,7 @@ if (NT > nt) {
   mm <- c(mm,rep(NA,Nx))
   dd <- c(dd,rep(NA,Nx))
   print(paste("Extending the vectors by ",Nx," elements: dim(psl)= ",dim(psl)[1],", ",dim(psl)[2],sep=""))
-} else {
+} else if ( (NT < nt) & (file.exists(fname))  ){
   if (verbose) print("### NT <= nt ###!")
   if (verbose) print("Did not extend vectors")
 }
@@ -364,16 +364,22 @@ if (sum(slp$tim > max(tim,na.rm=TRUE))>0) {
 
 
   #x11(); image(dpslx,main="dpslx")
+#  resx$Z.fit
+  
   
   for (j in 1:(nyx-1)) {
     dx11 <- 0.5*(dslpdx[2:nxx,j]+dslpdx[2:nxx,j+1])
     dx12 <- 0.5*(dslpdx[1:(nxx-1),j]+dslpdx[1:(nxx-1),j+1])
     dx21 <- 0.5*(dslpdx2[2:nxx,j]+dslpdx2[2:nxx,j+1])
     dx22 <- 0.5*(dslpdx2[1:(nxx-1),j]+dslpdx2[1:(nxx-1),j+1])
-    py[,j] <- 0.25*(resx$Z.fit[2:nxx,j]+resx$Z.fit[2:nyx,j+1]+
-                    resx$Z.fit[1:(nxx-1),j]+resx$Z.fit[1:(nyx-1),j+1]) +
-              0.25*(mslpmap[2:nxx,j]+mslpmap[2:nyx,j+1]+
-                    mslpmap[1:(nxx-1),j]+mslpmap[1:(nyx-1),j+1])  
+#    py[,j] <- 0.25*(resx$Z.fit[2:nxx,j]+resx$Z.fit[2:nyx,j+1]+
+#                    resx$Z.fit[1:(nxx-1),j]+resx$Z.fit[1:(nyx-1),j+1]) +
+#              0.25*(mslpmap[2:nxx,j]+mslpmap[2:nyx,j+1]+
+#                    mslpmap[1:(nxx-1),j]+mslpmap[1:(nyx-1),j+1])  
+    py[,j] <- 0.25*(resx$Z.fit[2:nxx,j]+resx$Z.fit[2:nxx,j+1]+              # Bug corrected - REB 20.11.2008
+                    resx$Z.fit[1:(nxx-1),j]+resx$Z.fit[1:(nxx-1),j+1]) +
+              0.25*(mslpmap[2:nxx,j]+mslpmap[2:nxx,j+1]+
+                    mslpmap[1:(nxx-1),j]+mslpmap[1:(nxx-1),j+1])  
     dpsly[,j] <- 0.5* (dx11 + dx12)/10                      # scale by  100/1000: SLP in hPa -> Pa, but x in km.
     f <- 0.000147*sin(pi*latx[j]/180)
     wind[,j] <- sqrt(dslpdy[,j]^2 + dslpdx[,j]^2)/(10*f*rho)   # 100/1000: SLP in hPa -> Pa, but x in km.
@@ -393,10 +399,32 @@ if (sum(slp$tim > max(tim,na.rm=TRUE))>0) {
 
   i.sim <- min(c(sum(lows),nsim))
 
-  if (sum(lows)>0) {
-    lon[ii,1:i.sim] <- lonXY[lows][strength][1:i.sim]
-    lat[ii,1:i.sim] <- latXY[lows][strength][1:i.sim]
-    psl[ii,1:i.sim] <- pcent[strength][1:i.sim]
+  # Tests to provide diagnostics
+  test.lon.d <- dim(lon)
+  test.lonXY.d <- dim(lonXY)
+  test.lows.d <- dim(lows)
+  test.strength.l <- length(strength)
+  
+  if ( (ii > test.lonXY.d[1]) | (i.sim > test.lonXY.d[2]) |
+       (test.lows.d[1]>test.lonXY.d[1]) | (test.lows.d[2]>test.lonXY.d[2]) |
+       (i.sim > test.strength.l) ) {
+    print("CCI test indicates subscript out of bounds")
+    print(paste("ii=",ii,test.lonXY.d[1],"i.sim=",i.sim,test.lonXY.d[2],
+                "sum(lows)=",sum(lows),
+                "sum(strength)=",sum(strength)))
+    print("Skip this time slice!")
+  } else if ( (sum(lows)>0) & (i.sim >=1) ){
+    if (length(lon[ii,1:i.sim])==length(lonXY[lows][strength][1:i.sim])) {
+      lon[ii,1:i.sim] <- lonXY[lows][strength][1:i.sim]
+      lat[ii,1:i.sim] <- latXY[lows][strength][1:i.sim]
+      psl[ii,1:i.sim] <- pcent[strength][1:i.sim]
+    } else {
+      print(paste("CCI warning: inconsistent vector lengths. length(lon[ii,1:i.sim])=",
+                  length(lon[ii,1:i.sim]),"length(lonXY[lows][strength][1:i.sim])",
+                  length(lonXY[lows][strength][1:i.sim]),"ii=",ii,"i.sim=",i.sim,
+                  "sum(lows)=",sum(lows),"sum(strength)=",sum(strength)))
+      print("Skip this time slice!")            
+    }
     tim[ii] <- slp$tim[it]; yy[ii] <- slp$yy[it]
     mm[ii] <- slp$mm[it]; dd[ii] <- slp$dd[it]
   }
@@ -406,8 +434,10 @@ if (sum(slp$tim > max(tim,na.rm=TRUE))>0) {
   #print(paste("i.sim=",i.sim,"sum(lows)=",sum(lows)))
   del <- rep(FALSE,i.sim)  
   for (i in 1:(i.sim-1)) {
-    d <- distAB(lon[ii,i],lat[ii,i],lon[ii,(i+1):i.sim],lat[ii,(i+1):i.sim])/1000
-    del <- del | c(rep(FALSE,i),d < 600)
+    if ( (length(lon[ii,i])==1 ) & (length(lat[ii,i])==1) ) { 
+      d <- distAB(lon[ii,i],lat[ii,i],lon[ii,(i+1):i.sim],lat[ii,(i+1):i.sim])/1000
+      del <- del | c(rep(FALSE,i),d < 600)
+    }
   }
 
   psl[ii,del] <- NA
@@ -446,11 +476,19 @@ if (sum(slp$tim > max(tim,na.rm=TRUE))>0) {
     p.inflx <- c(p.low[1],p.high[1])
 
     #if (i==1) print(c(c(rep(lon[ii,i],2),p.inflx),NA,c(p.infly,rep(lat[ii,i],2))))
-    vec <- distAB(lon[ii,i],lat[ii,i],c(rep(lon[ii,i],2),p.inflx),c(p.infly,rep(lat[ii,i],2)))/1000
-    vec[(vec < 10) | (vec > 1200)] <- NA
 
-    radius[ii,i] <- min(vec,na.rm=TRUE)
-
+    # Bug fixed 20.11.2008
+    # - c(rep(lon[ii,i],2),p.inflx) repaced by c(rep(lon[ii,i],length(p.infly)),p.inflx)
+    # - c(p.infly,rep(lat[ii,i],2)) replaced by c(p.infly,rep(lat[ii,i],length(p.inflx))))
+    #print("HERE");  print(c(i,ii)); print(lon[ii,i]); print(lat[ii,i]);
+    #print(p.infly); print(p.inflx)
+    if ( (length(lon[ii,i])==1 ) & (length(lat[ii,i])==1) ) {
+      vec <- distAB(lon[ii,i],lat[ii,i],c(rep(lon[ii,i],length(p.inflx)),p.inflx),
+                    c(p.infly,rep(lat[ii,i],length(p.inflx))))/1000
+      vec[(vec < 10) | (vec > 1200)] <- NA
+      radius[ii,i] <- min(vec,na.rm=TRUE)
+    }
+    
 # Find speed at points of inflexion:
     #print("Find speed at points of inflexion:")
     #i.near <- ( sqrt((lonXY - lon[ii,i])^2 + (latXY - lat[ii,i])^2) < rad )
@@ -494,10 +532,11 @@ if (sum(slp$tim > max(tim,na.rm=TRUE))>0) {
                   scale.factor.x = resx$scale.factor,scale.factor.y = resy$scale.factor)
   if (mod(ii,30)==0) save(file=back.up.file,results)
   if (mod(ii,10)==0) save(file=fname,results)
-  print(paste("ii=",ii,"it=",it,"yy=",slp$yy[it],"mm=",slp$mm[it],
-              "dd=",slp$dd[it],"N.lows=",sum(i.sim),"PSL min=",round(psl[ii,1]),
-              "(hPa) dPSL max=",round(max.dpsl[ii,1],4),"max.speed=",
-              round(max.speed[ii,1],1),"(m/s) radius=",round(radius[ii,1],1)," (km)"))
+  print(paste("ii=",ii," it=",it," yy=",yy[ii]," mm=",mm[ii],
+              " dd=",dd[ii]," N.lows=",sum(i.sim)," PSL min=",round(psl[ii,1]),
+              " (hPa) dPSL max=",round(max.dpsl[ii,1],2)," max.speed=",
+              round(max.speed[ii,1],1),"m/s radius=",round(radius[ii,1],1),"km",
+              " lon=",round(lon[ii,1],2)," lat=",round(lat[ii,1],2)),sep="")
 
 
 
@@ -517,7 +556,7 @@ if (sum(slp$tim > max(tim,na.rm=TRUE))>0) {
             bitmap(file = paste(graph.dir,"cci",ii.c,".png",sep=""),type="png256")
 #    bitmap(file = "cyclones.jpg",type="jpeg",width=15, height=15, res=250)
     par(las=1)
-    image(lonx,latx,slpmap,levels=seq(-20,20,by=0.5),
+    image(lonx,latx,slpmap,zlim=c(-20,20),
           col = my.col,
           main="SLP anomalies",xlab="Longitude (deg E)",ylab="Latitude (deg N)",
           sub=paste(slp$yy[it],"-",slp$mm[it],"-",slp$dd[it]," #",ii,sep=""))
@@ -565,12 +604,13 @@ if (sum(slp$tim > max(tim,na.rm=TRUE))>0) {
     dev.off()
 
 # X-profile:
-    if (EPS) postscript(file = paste(graph.dir,"cyclones_x_",vname,ii.c,".eps",sep=""),onefile=FALSE,horizontal=FALSE) else
+    if (EPS) postscript(file = paste(graph.dir,"cyclones_x_",vname,ii.c,".eps",sep=""),
+                        onefile=FALSE,horizontal=FALSE) else
             bitmap(file = paste(graph.dir,"cyclones_x_",vname,ii.c,".png",sep=""),type="png256")
     #bitmap(file = "cyclones_x.jpg",type="jpeg",width=15, height=15, res=250)     
     par(las=1)
     plot(lonx,slpmap[,ilat1]+mslpmap[,ilat1],ylim=c(950,1050),
-         main=paste("SLP profile at ",slp$lat[ilat1],"N",sep=""),
+         main=paste("SLP profile at ",latx[ilat1],"N",sep=""),
          xlab="Longitude (deg E)",ylab="SLP (hPa)",
          sub=paste(slp$yy[it],"-",slp$mm[it],"-",slp$dd[it]," #",ii,sep=""))
     grid()

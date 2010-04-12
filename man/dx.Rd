@@ -53,7 +53,9 @@ test.dT(y=NULL,maxhar=15)
     \item{Z}{Field values of which the gradients are sought}
     \item{r}{mean radius of Earth}
     \item{maxhar}{Number of harmonics to include. If NULL, \code{maxhar} is set to the length of the series.}
-    \item{mask.bad}{}
+    \item{mask.bad}{TRUE/FALSE. Used to ignore grid boxes with missing
+      data in the end rsults - set to NA. Otherwise, interpolated values
+    are used.}
     \item{y}{a time series (vector).}
     \item{plot}{plot data and fit}
     \item{field}{Field to which the test is applied (default: DNMI.slp)}
