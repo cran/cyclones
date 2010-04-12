@@ -8,8 +8,8 @@
 \alias{Current2monthly}
 \alias{CurrentLatitude}
 \alias{CurrentValidation}
-\alias{data(gulfstream)}
-\alias{data(kuroshio)}
+\alias{gulfstream}
+\alias{kuroshio}
 \title{Ocean currents and sea surface temperature fronts}
 \description{
 The function \code{FrontStats} uses \code{dY} to identify the
