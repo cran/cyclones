@@ -337,6 +337,9 @@ if (sum(slp$tim > max(tim,na.rm=TRUE))>0) {
   lonXY <- rep(0.5*(resx$lon[2:NXX]+resx$lon[1:(NXX-1)]),nyx-1)
   latXY <- sort(rep(0.5*(resx$lat[2:NYY]+resx$lat[1:(NYY-1)]),nxx-1))
 
+  # REB 24.11.2010:
+  dim(lonXY) <- c(NXX-1,NYY-1)
+  dim(latXY) <- c(NXX-1,NYY-1)
 # Masking out the borders to avoid spurious border effects:
 #  dslpdx[c(1,length(dslpdx))] <- NA
 #  dslpdx2[c(1,length(dslpdx2))] <- NA
@@ -397,7 +400,7 @@ if (sum(slp$tim > max(tim,na.rm=TRUE))>0) {
   strength <- order(pcent)
   if (!cyclones) strength <- reverse(strength)
 
-  i.sim <- min(c(sum(lows),nsim))
+  i.sim <- min(c(sum(lows,na.rm=TRUE),nsim),na.rm=TRUE)
 
   # Tests to provide diagnostics
   test.lon.d <- dim(lon)
