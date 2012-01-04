@@ -1,6 +1,5 @@
 \name{Storms.ERA40}
 \alias{Storms.ERA40}
-\alias{Storms.ERA40x1}
 \alias{Storms.NMC}
 \alias{data(Storms.NMC)}
 \alias{data(Storms.ERA40)}
@@ -11,7 +10,6 @@
   \url{http://www.ncep.noaa.gov/}) or ECMWF re-analysis ERA40 6-hr or 24-hr slp
   fields ('x1' is once a day).}
 \usage{data(Storms.ERA40)
-       data(Storms.ERA40x1)
        data(Storms.NMC) }
 \format{'Storms.ERA40' - a list of lon (longitude in degrees), lat (latitude in
   degrees), psl (central sea level pressure in hPa), yy (year), mm (month), dd (day),

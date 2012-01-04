@@ -594,9 +594,9 @@ if (sum(slp$tim > max(tim,na.rm=TRUE))>0) {
     points(latx[ilat1],mean(mean(slpmap[ilon1,]+mslpmap[ilon1,])),col="grey40",pch=20,cex=1.5)
     points(latx[ilat1],mean(mean(slpmap[ilon1,]+mslpmap[ilon1,])),pch=21,cex=1.4)
     lines(latx,resx$Z.fit[ilon1,]+mslpmap[ilon1,],col="black",lwd=2,lty=2)
-    lines(latx,dslpdy[ilon1,]/sd(dslpdy[ilon1,])*sd(slpmap[ilon1,])
+    lines(latx,dslpdy[ilon1,]/sd(c(dslpdy[ilon1,]))*sd(c(slpmap[ilon1,]))
           + mean(slpmap[ilon1,]+mslpmap[ilon1,]),lty=2)
-    lines(latx,dslpdy2[ilon1,]/sd(dslpdy2[ilon1,])*sd(slpmap[ilon1,])
+    lines(latx,dslpdy2[ilon1,]/sd(c(dslpdy2[ilon1,]))*sd(c(slpmap[ilon1,]))
           + mean(slpmap[ilon1,]+mslpmap[ilon1,]),lty=3,col="grey20")
     legend(min(latx),1050,c("Original         ","Fitted       ","deepest minima        ",
            "dP(y)/dy      ","d^2P(y)/dy^2      "),

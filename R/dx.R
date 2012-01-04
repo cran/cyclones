@@ -62,7 +62,8 @@ dX <- function(lon,lat,Z,r=6.378e06,maxhar=NULL,mask.bad=TRUE,plot=FALSE,chk.con
 
     }
    }
-    if (plot) {plot(Z[,j],main=paste("dX:",j,"of",ny),xlab="y",ylab="z"); lines(Z.fit[,j],lwd=2,col="grey")}
+    if (plot) {plot(Z[,j],main=paste("dX:",j,"of",ny),xlab="y",ylab="z")
+               lines(Z.fit[,j],lwd=2,col="grey")}
 #    dZ[,j] <- dZ[,j]/(r*cos(phi[j]))
     dZ[,j] <- dZ[,j]/dx[j]
   }

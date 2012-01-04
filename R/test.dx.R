@@ -31,7 +31,7 @@ test.dX <- function(field=NULL,maxhar=7) {
   lines(X,dy.dx$Z.fit[,ii],col="red",lwd=2)
   y <- dy.dx$dZ[,ii]*dy.dx$dx[ii]
   y <- dy.dx$Z.fit[1,ii] + (cumsum(y)-y[1])
-  scaling <- sd(dy.dx$Z.fit[,ii],na.rm=TRUE)/sd(y,na.rm=TRUE)
+  scaling <- sd(c(dy.dx$Z.fit[,ii]),na.rm=TRUE)/sd(c(y),na.rm=TRUE)
   my <- y[1]
   print(paste("sd difference is:",scaling))
   # TEST y <- (y - my)* scaling + my
@@ -80,7 +80,7 @@ test.dY <- function(field=NULL,maxhar=5) {
   lines(X,dy.dx$Z.fit[ii,],col="red",lwd=2)
   y <- dy.dx$dZ[ii,]*dy.dx$dy
   y <- dy.dx$Z.fit[ii,1] + (cumsum(y)-y[1])
-  scaling <- sd(dy.dx$Z.fit[ii,],na.rm=TRUE)/sd(y,na.rm=TRUE)
+  scaling <- sd(c(dy.dx$Z.fit[ii,]),na.rm=TRUE)/sd(c(y),na.rm=TRUE)
   my <- y[1]
   print(paste("sd difference is:",scaling))
   # TEST y <- (y - my)* scaling + my
@@ -121,7 +121,7 @@ test.dT <- function(y=NULL,maxhar=15) {
   lines(X,dy.dx$y.fit,col="red",lwd=2)
   y.t <- dy.dx$dy*dx
   y.t <- dy.dx$y.fit[1] + (cumsum(y.t)-y.t[1])
-  scaling <- sd(dy.dx$y.fit,na.rm=TRUE)/sd(y.t,na.rm=TRUE)
+  scaling <- sd(c(dy.dx$y.fit),na.rm=TRUE)/sd(c(y.t),na.rm=TRUE)
   my <- y.t[1]
   print(paste("sd difference is:",scaling))
   # TEST y <- (y - my)* scaling + my
